@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process("MatchGenJetL1Object")
+process = cms.Process("MatchGenJetWithL1Objects")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
@@ -13,7 +13,7 @@ process.source = cms.Source("PoolSource",
     )
 )
 
-process.demo = cms.EDAnalyzer('MatchGenJetWithL1Object'
+process.demo = cms.EDAnalyzer('MatchGenJetWithL1Objects'
 )
 
 
