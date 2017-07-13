@@ -99,6 +99,7 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
     TTree * _l1tJetGenJetTree;
     TTree * _l1tEGammaGenJetTree;
     TTree * _l1tTauGenJetTree;
+    TTree * _genJetTree;
 
     PtEtaPhi _genJetPtEtaPhi;
     PtEtaPhi _l1tObjectPtEtaPhi;
@@ -114,6 +115,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tJetGenJetTree = fs -> make<TTree>("matchedL1TJetGenJetTree", "TTree with generator-level jet / L1T Jet information");
   this -> _l1tEGammaGenJetTree = fs -> make<TTree>("matchedL1TEGammaGenJetTree", "TTree with generator-level jet / L1T EGamma information");
   this -> _l1tTauGenJetTree = fs -> make<TTree>("matchedL1TTauGenJetTree", "TTree with generator-level jet / L1T Tau information");
+  this -> _genJetTree = fs -> make<TTree>("matchedGenJetTree", "TTree with generator-level jet information");
 
   this -> _l1tMuonGenJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
   this -> _l1tMuonGenJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
@@ -146,6 +148,11 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tTauGenJetTree -> Branch("l1tTau_eta", &(this -> _l1tObjectPtEtaPhi.eta), "l1tTau_eta/F");
   this -> _l1tTauGenJetTree -> Branch("l1tTau_phi", &(this -> _l1tObjectPtEtaPhi.phi), "l1tTau_phi/F");
   this -> _l1tTauGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
+
+  //Used to detemine the prob that a jet will be misidentified binned in pt
+  this -> _genJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
+  this -> _genJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
+  this -> _genJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
 
 }
 
@@ -249,6 +256,15 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     auto l1tTauGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tTauCollectionHandle);
     this -> _fillTreeWithMatchedPairs<>(*(this -> _l1tTauGenJetTree), l1tTauGenJetPairs);
   }
+
+  for (const reco::GenJet & genJet : *genJetCollectionHandle)
+  {
+    this -> _genJetPtEtaPhi.pt = genJet.pt();
+    this -> _genJetPtEtaPhi.eta = genJet.eta();
+    this -> _genJetPtEtaPhi.phi = genJet.phi();
+    this -> _genJetTree -> Fill();
+  }
+
 }
 
 // Another lovely template function to fill trees
@@ -266,10 +282,10 @@ MatchGenJetWithL1Objects::_fillTreeWithMatchedPairs
     const reco::GenJet* genJet = std::get<1>(matchTuple);
     float deltaR2 = std::get<2>(matchTuple);
     this -> _genJetPtEtaPhi.pt = genJet -> pt();
-    this -> _l1tObjectPtEtaPhi.pt = l1tObject -> pt();
     this -> _genJetPtEtaPhi.eta = genJet -> eta();
-    this -> _l1tObjectPtEtaPhi.eta = l1tObject -> eta();
     this -> _genJetPtEtaPhi.phi = genJet -> phi();
+    this -> _l1tObjectPtEtaPhi.pt = l1tObject -> pt();
+    this -> _l1tObjectPtEtaPhi.eta = l1tObject -> eta();
     this -> _l1tObjectPtEtaPhi.phi = l1tObject -> phi();
     this -> _deltaR2 = deltaR2;
     aTree.Fill();
