@@ -54,6 +54,15 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
 
     void _getTokens(const edm::ParameterSet&);
     void _freeTokens();
+
+    // Beautiful template function to perform matching between a gen jet and whatever L1T object
+    template <class T> // <3
+    void _matchGenJetWithL1Object
+    (
+      const edm::Event& iEvent,
+      const edm::Handle< std::vector< reco::GenJet > > &,
+      const edm::EDGetTokenT < BXVector < T > > & 
+    );
   
     edm::EDGetTokenT< std::vector< reco::GenJet > > *_genJetCollectionTag;
     edm::EDGetTokenT< BXVector< l1t::Muon > > *_l1tMuonCollectionTag;
@@ -78,10 +87,8 @@ void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
 {
   
   this -> _genJetCollectionTag = new edm::EDGetTokenT< std::vector< reco::GenJet > >(consumes< std::vector< reco::GenJet > > (iConfig.getParameter< edm::InputTag >("genJetCollectionTag")));
-
   // Taking the tag of the various L1T object collections
   // If a parameter is omitted that object will not be studied
-
   try
   {
     this -> _l1tMuonCollectionTag = new edm::EDGetTokenT< BXVector < l1t::Muon > >(consumes< BXVector< l1t::Muon > > (iConfig.getParameter< edm::InputTag >("l1tMuonCollectionTag")));
@@ -117,7 +124,8 @@ void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
   return;
 }
 
-void MatchGenJetWithL1Objects::_freeTokens() {
+void MatchGenJetWithL1Objects::_freeTokens()
+{
   if (this -> _genJetCollectionTag) delete this -> _genJetCollectionTag;
   if (this -> _l1tMuonCollectionTag) delete this -> _l1tMuonCollectionTag;
   if (this -> _l1tJetCollectionTag) delete this -> _l1tJetCollectionTag;
@@ -139,24 +147,44 @@ MatchGenJetWithL1Objects::~MatchGenJetWithL1Objects()
 void
 MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+  //Retrieving gen and l1t stuff
+  edm::Handle < std::vector< reco::GenJet > > genJetCollectionHandle;
+  iEvent.getByToken(*(this -> _genJetCollectionTag), genJetCollectionHandle);
+  if (this -> _l1tMuonCollectionTag != NULL)
+    this -> _matchGenJetWithL1Object<>(iEvent, genJetCollectionHandle, *(this -> _l1tMuonCollectionTag));
+  if (this -> _l1tJetCollectionTag != NULL)
+    this -> _matchGenJetWithL1Object<>(iEvent, genJetCollectionHandle, *(this -> _l1tJetCollectionTag));
+  if (this -> _l1tEGammaCollectionTag != NULL)
+    this -> _matchGenJetWithL1Object<>(iEvent, genJetCollectionHandle, *(this -> _l1tEGammaCollectionTag));
+  if (this -> _l1tTauCollectionTag != NULL)
+    this -> _matchGenJetWithL1Object<>(iEvent, genJetCollectionHandle, *(this -> _l1tTauCollectionTag));
 }
 
+template <class T> // <3
+void MatchGenJetWithL1Objects::_matchGenJetWithL1Object
+(
+  const edm::Event& iEvent,
+  const edm::Handle < std::vector< reco::GenJet > > & genJetCollectionHandle,
+  const edm::EDGetTokenT < BXVector < T > > & l1tObjectCollectionTag 
+)
+{
+  edm::Handle < BXVector< T > > l1tObjectCollectionHandle;
+  iEvent.getByToken(l1tObjectCollectionTag, l1tObjectCollectionHandle);
+}
 
 // ------------ method called once each job just before starting event loop  ------------
-void 
-MatchGenJetWithL1Objects::beginJob()
+void MatchGenJetWithL1Objects::beginJob()
 {
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
-void 
-MatchGenJetWithL1Objects::endJob() 
+void MatchGenJetWithL1Objects::endJob() 
 {
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
-void
-MatchGenJetWithL1Objects::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+void MatchGenJetWithL1Objects::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
+{
   
 }
 
