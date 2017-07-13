@@ -4,7 +4,7 @@ process = cms.Process("MatchGenJetWithL1Objects")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 
 process.TFileService = cms.Service("TFileService", fileName = cms.string("l1tObjectGenJetMatching.root") )
 
@@ -27,7 +27,7 @@ readFiles.extend( [
 
 process.source = source
 
-process.demo = cms.EDAnalyzer('MatchGenJetWithL1Objects',
+process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
   genJetCollectionTag = cms.InputTag("ak4GenJets"),
   l1tJetCollectionTag = cms.InputTag("simCaloStage2Digis"),
   l1tMuonCollectionTag = cms.InputTag("simGmtStage2Digis"),
@@ -36,4 +36,4 @@ process.demo = cms.EDAnalyzer('MatchGenJetWithL1Objects',
 )
 
 
-process.p = cms.Path(process.demo)
+process.p = cms.Path(process.MatchGenJetWithL1Objects)
