@@ -226,28 +226,54 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     edm::Handle < BXVector< l1t::Muon > > l1tMuonCollectionHandle;
     iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
     auto l1tMuonGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle);
+    this -> _fillTreeWithMatchedPairs<>(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
   }
   if (this -> _l1tJetCollectionTag)
   {
     edm::Handle < BXVector< l1t::Jet > > l1tJetCollectionHandle;
     iEvent.getByToken(*(this -> _l1tJetCollectionTag), l1tJetCollectionHandle);
     auto l1tJetGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tJetCollectionHandle);
+    this -> _fillTreeWithMatchedPairs<>(*(this -> _l1tJetGenJetTree), l1tJetGenJetPairs);
   }
   if (this -> _l1tEGammaCollectionTag)
   {
     edm::Handle < BXVector< l1t::EGamma > > l1tEGammaCollectionHandle;
     iEvent.getByToken(*(this -> _l1tEGammaCollectionTag), l1tEGammaCollectionHandle);
     auto l1tEGammaGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tEGammaCollectionHandle);
+    this -> _fillTreeWithMatchedPairs<>(*(this -> _l1tEGammaGenJetTree), l1tEGammaGenJetPairs);
   }
   if (this -> _l1tTauCollectionTag)
   {
     edm::Handle < BXVector< l1t::Tau > > l1tTauCollectionHandle;
     iEvent.getByToken(*(this -> _l1tTauCollectionTag), l1tTauCollectionHandle);
     auto l1tTauGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tTauCollectionHandle);
+    this -> _fillTreeWithMatchedPairs<>(*(this -> _l1tTauGenJetTree), l1tTauGenJetPairs);
   }
+}
 
-
-
+// Another lovely template function to fill trees
+template <class T> // <3
+void
+MatchGenJetWithL1Objects::_fillTreeWithMatchedPairs
+(
+  TTree & aTree,
+  const std::vector < std::tuple <const T*, const reco::GenJet*, float > > & matchedL1TObjectJetPairs
+)
+{
+  for (const auto & matchTuple : matchedL1TObjectJetPairs)
+  {
+    const T* l1tObject = std::get<0>(matchTuple);
+    const reco::GenJet* genJet = std::get<1>(matchTuple);
+    float deltaR2 = std::get<2>(matchTuple);
+    this -> _genJetPtEtaPhi.pt = genJet -> pt();
+    this -> _l1tObjectPtEtaPhi.pt = l1tObject -> pt();
+    this -> _genJetPtEtaPhi.eta = genJet -> eta();
+    this -> _l1tObjectPtEtaPhi.eta = l1tObject -> eta();
+    this -> _genJetPtEtaPhi.phi = genJet -> phi();
+    this -> _l1tObjectPtEtaPhi.phi = l1tObject -> phi();
+    this -> _deltaR2 = deltaR2;
+    aTree.Fill();
+  }
 }
 
 template <class T> // <3
