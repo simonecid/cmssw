@@ -1,6 +1,7 @@
 #Written by Luca Cadamuro (github: l-cadamuro)
 
 import os
+import mySamples
 
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
@@ -27,9 +28,9 @@ def splitInBlocks (l, n):
 ###########
 
 njobs = 200
-filelist = open("Data_SingleMu_2016RunB_PromptRecov2_1Luglio.txt")
-folder = "testSubmitT3TAndP2Luglio"
-JSONfile = "/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/Cert_271036-275125_13TeV_PromptReco_Collisions16_JSON.txt"
+
+sample = mySamples.readFiles_QCD_Pt_15_3000
+
 ###########
 
 os.system ('source /opt/exp_soft/cms/t3/t3setup')
@@ -66,5 +67,5 @@ for idx, block in enumerate(fileblocks):
 
     os.system ('chmod u+rwx ' + outJobName)
     command = ('/opt/exp_soft/cms/t3/t3submit -q cms \'' + outJobName +"\'")
-    # print command
-    os.system (command)
+    print command
+    #os.system (command)
