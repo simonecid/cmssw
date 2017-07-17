@@ -104,9 +104,11 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
     PtEtaPhi _genJetPtEtaPhi;
     PtEtaPhi _l1tObjectPtEtaPhi;
     float _deltaR2;
+    unsigned int _eventNumber;
 };
 
-MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iConfig)
+MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iConfig):
+_eventNumber(0)
 {  
   this -> _getTokens(iConfig);
   usesResource("TFileService");
@@ -115,8 +117,9 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tJetGenJetTree = fs -> make<TTree>("matchedL1TJetGenJetTree", "TTree with generator-level jet / L1T Jet information");
   this -> _l1tEGammaGenJetTree = fs -> make<TTree>("matchedL1TEGammaGenJetTree", "TTree with generator-level jet / L1T EGamma information");
   this -> _l1tTauGenJetTree = fs -> make<TTree>("matchedL1TTauGenJetTree", "TTree with generator-level jet / L1T Tau information");
-  this -> _genJetTree = fs -> make<TTree>("matchedGenJetTree", "TTree with generator-level jet information");
+  this -> _genJetTree = fs -> make<TTree>("genJetTree", "TTree with generator-level jet information");
 
+  this -> _l1tMuonGenJetTree -> Branch("eventNumber", & (this -> _eventNumber), "eventNumber/i");
   this -> _l1tMuonGenJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
   this -> _l1tMuonGenJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
   this -> _l1tMuonGenJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
@@ -125,6 +128,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tMuonGenJetTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectPtEtaPhi.phi), "l1tMuon_phi/F");
   this -> _l1tMuonGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
+  this -> _l1tJetGenJetTree -> Branch("eventNumber", & (this -> _eventNumber), "eventNumber/i");
   this -> _l1tJetGenJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
   this -> _l1tJetGenJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
   this -> _l1tJetGenJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
@@ -133,6 +137,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tJetGenJetTree -> Branch("l1tJet_phi", &(this -> _l1tObjectPtEtaPhi.phi), "l1tJet_phi/F");
   this -> _l1tJetGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
+  this -> _l1tEGammaGenJetTree -> Branch("eventNumber", & (this -> _eventNumber), "eventNumber/i");
   this -> _l1tEGammaGenJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
   this -> _l1tEGammaGenJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
   this -> _l1tEGammaGenJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
@@ -141,6 +146,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_phi", &(this -> _l1tObjectPtEtaPhi.phi), "l1tEGamma_phi/F");
   this -> _l1tEGammaGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
+  this -> _l1tTauGenJetTree -> Branch("eventNumber", & (this -> _eventNumber), "eventNumber/i");
   this -> _l1tTauGenJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
   this -> _l1tTauGenJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
   this -> _l1tTauGenJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
@@ -150,6 +156,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tTauGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
   //Used to detemine the prob that a jet will be misidentified binned in pt
+  this -> _genJetTree -> Branch("eventNumber", & (this -> _eventNumber), "eventNumber/i");
   this -> _genJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
   this -> _genJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
   this -> _genJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
@@ -264,6 +271,8 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     this -> _genJetPtEtaPhi.phi = genJet.phi();
     this -> _genJetTree -> Fill();
   }
+
+  this -> _eventNumber++;
 
 }
 
