@@ -14,7 +14,7 @@ options.register ('source',
                   VarParsing.VarParsing.varType.string,          # string, int, or float
                   "Source sample")
 options.outputFile = 'l1tObjectGenJetMatching.root'
-options.source = source_0
+options.source = "source_0"
 options.parseArguments()
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
