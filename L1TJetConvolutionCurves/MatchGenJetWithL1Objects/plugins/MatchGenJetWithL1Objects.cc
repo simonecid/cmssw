@@ -47,7 +47,8 @@
 
 #include <utility>
 
-struct PtEtaPhi {
+struct Particle {
+  unsigned int id;
   float pt, eta, phi;
 };
 
@@ -69,20 +70,18 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
 
     // Beautiful template function to perform matching between a gen jet and whatever L1T object
     template <class T> // <3
-    const std::vector < std::tuple < const T *, const reco::GenJet *, float > > 
+    const std::vector < std::tuple < Particle, Particle, float > > 
     _matchGenJetWithL1Object
     (
       const edm::Handle< std::vector< reco::GenJet > > &,
       const edm::Handle < BXVector < T > > & 
     );
     
-    // Another lovely template function to fill trees
-    template <class T> // <3
     void
     _fillTreeWithMatchedPairs
     (
       TTree &,
-      const std::vector < std::tuple <const T*, const reco::GenJet*, float > > &
+      const std::vector < std::tuple < Particle, Particle, float > > &
     );
   
     edm::EDGetTokenT< std::vector< reco::GenJet > > *_genJetCollectionTag;
@@ -101,8 +100,8 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
     TTree * _l1tTauGenJetTree;
     TTree * _genJetTree;
 
-    PtEtaPhi _genJetPtEtaPhi;
-    PtEtaPhi _l1tObjectPtEtaPhi;
+    Particle _genJetParticle;
+    Particle _l1tObjectParticle;
     float _deltaR2;
     unsigned int _eventNumber;
 };
@@ -120,46 +119,55 @@ _eventNumber(0)
   this -> _genJetTree = fs -> make<TTree>("genJetTree", "TTree with generator-level jet information");
 
   this -> _l1tMuonGenJetTree -> Branch("eventNumber", & (this -> _eventNumber), "eventNumber/i");
-  this -> _l1tMuonGenJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
-  this -> _l1tMuonGenJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
-  this -> _l1tMuonGenJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
-  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_pt", &(this -> _l1tObjectPtEtaPhi.pt), "l1tMuon_pt/F");
-  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectPtEtaPhi.eta), "l1tMuon_eta/F");
-  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectPtEtaPhi.phi), "l1tMuon_phi/F");
+  this -> _l1tMuonGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
+  this -> _l1tMuonGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
+  this -> _l1tMuonGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
+  this -> _l1tMuonGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
+  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_id", &(this -> _l1tObjectParticle.id), "l1tMuon_id/i");
+  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_pt", &(this -> _l1tObjectParticle.pt), "l1tMuon_pt/F");
+  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectParticle.eta), "l1tMuon_eta/F");
+  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectParticle.phi), "l1tMuon_phi/F");
   this -> _l1tMuonGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
   this -> _l1tJetGenJetTree -> Branch("eventNumber", & (this -> _eventNumber), "eventNumber/i");
-  this -> _l1tJetGenJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
-  this -> _l1tJetGenJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
-  this -> _l1tJetGenJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
-  this -> _l1tJetGenJetTree -> Branch("l1tJet_pt", &(this -> _l1tObjectPtEtaPhi.pt), "l1tJet_pt/F");
-  this -> _l1tJetGenJetTree -> Branch("l1tJet_eta", &(this -> _l1tObjectPtEtaPhi.eta), "l1tJet_eta/F");
-  this -> _l1tJetGenJetTree -> Branch("l1tJet_phi", &(this -> _l1tObjectPtEtaPhi.phi), "l1tJet_phi/F");
+  this -> _l1tJetGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
+  this -> _l1tJetGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
+  this -> _l1tJetGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
+  this -> _l1tJetGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
+  this -> _l1tJetGenJetTree -> Branch("l1tJet_id", &(this -> _l1tObjectParticle.id), "l1tJet_id/i");
+  this -> _l1tJetGenJetTree -> Branch("l1tJet_pt", &(this -> _l1tObjectParticle.pt), "l1tJet_pt/F");
+  this -> _l1tJetGenJetTree -> Branch("l1tJet_eta", &(this -> _l1tObjectParticle.eta), "l1tJet_eta/F");
+  this -> _l1tJetGenJetTree -> Branch("l1tJet_phi", &(this -> _l1tObjectParticle.phi), "l1tJet_phi/F");
   this -> _l1tJetGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
   this -> _l1tEGammaGenJetTree -> Branch("eventNumber", & (this -> _eventNumber), "eventNumber/i");
-  this -> _l1tEGammaGenJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
-  this -> _l1tEGammaGenJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
-  this -> _l1tEGammaGenJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
-  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_pt", &(this -> _l1tObjectPtEtaPhi.pt), "l1tEGamma_pt/F");
-  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_eta", &(this -> _l1tObjectPtEtaPhi.eta), "l1tEGamma_eta/F");
-  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_phi", &(this -> _l1tObjectPtEtaPhi.phi), "l1tEGamma_phi/F");
+  this -> _l1tEGammaGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
+  this -> _l1tEGammaGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
+  this -> _l1tEGammaGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
+  this -> _l1tEGammaGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
+  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_id", &(this -> _l1tObjectParticle.id), "l1tEGamma_id/i");
+  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_pt", &(this -> _l1tObjectParticle.pt), "l1tEGamma_pt/F");
+  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_eta", &(this -> _l1tObjectParticle.eta), "l1tEGamma_eta/F");
+  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_phi", &(this -> _l1tObjectParticle.phi), "l1tEGamma_phi/F");
   this -> _l1tEGammaGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
   this -> _l1tTauGenJetTree -> Branch("eventNumber", & (this -> _eventNumber), "eventNumber/i");
-  this -> _l1tTauGenJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
-  this -> _l1tTauGenJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
-  this -> _l1tTauGenJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
-  this -> _l1tTauGenJetTree -> Branch("l1tTau_pt", &(this -> _l1tObjectPtEtaPhi.pt), "l1tTau_pt/F");
-  this -> _l1tTauGenJetTree -> Branch("l1tTau_eta", &(this -> _l1tObjectPtEtaPhi.eta), "l1tTau_eta/F");
-  this -> _l1tTauGenJetTree -> Branch("l1tTau_phi", &(this -> _l1tObjectPtEtaPhi.phi), "l1tTau_phi/F");
+  this -> _l1tTauGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
+  this -> _l1tTauGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
+  this -> _l1tTauGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
+  this -> _l1tTauGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
+  this -> _l1tTauGenJetTree -> Branch("l1tTau_id", &(this -> _l1tObjectParticle.id), "l1tTau_id/i");
+  this -> _l1tTauGenJetTree -> Branch("l1tTau_pt", &(this -> _l1tObjectParticle.pt), "l1tTau_pt/F");
+  this -> _l1tTauGenJetTree -> Branch("l1tTau_eta", &(this -> _l1tObjectParticle.eta), "l1tTau_eta/F");
+  this -> _l1tTauGenJetTree -> Branch("l1tTau_phi", &(this -> _l1tObjectParticle.phi), "l1tTau_phi/F");
   this -> _l1tTauGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
   //Used to detemine the prob that a jet will be misidentified binned in pt
   this -> _genJetTree -> Branch("eventNumber", & (this -> _eventNumber), "eventNumber/i");
-  this -> _genJetTree -> Branch("genJet_pt", &(this -> _genJetPtEtaPhi.pt), "genJet_pt/F");
-  this -> _genJetTree -> Branch("genJet_eta", &(this -> _genJetPtEtaPhi.eta), "genJet_eta/F");
-  this -> _genJetTree -> Branch("genJet_phi", &(this -> _genJetPtEtaPhi.phi), "genJet_phi/F");
+  this -> _l1tMuonGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
+  this -> _genJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
+  this -> _genJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
+  this -> _genJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
 
 }
 
@@ -240,35 +248,36 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     edm::Handle < BXVector< l1t::Muon > > l1tMuonCollectionHandle;
     iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
     auto l1tMuonGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle);
-    this -> _fillTreeWithMatchedPairs<>(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
+    this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
   }
   if (this -> _l1tJetCollectionTag)
   {
     edm::Handle < BXVector< l1t::Jet > > l1tJetCollectionHandle;
     iEvent.getByToken(*(this -> _l1tJetCollectionTag), l1tJetCollectionHandle);
     auto l1tJetGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tJetCollectionHandle);
-    this -> _fillTreeWithMatchedPairs<>(*(this -> _l1tJetGenJetTree), l1tJetGenJetPairs);
+    this -> _fillTreeWithMatchedPairs(*(this -> _l1tJetGenJetTree), l1tJetGenJetPairs);
   }
   if (this -> _l1tEGammaCollectionTag)
   {
     edm::Handle < BXVector< l1t::EGamma > > l1tEGammaCollectionHandle;
     iEvent.getByToken(*(this -> _l1tEGammaCollectionTag), l1tEGammaCollectionHandle);
     auto l1tEGammaGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tEGammaCollectionHandle);
-    this -> _fillTreeWithMatchedPairs<>(*(this -> _l1tEGammaGenJetTree), l1tEGammaGenJetPairs);
+    this -> _fillTreeWithMatchedPairs(*(this -> _l1tEGammaGenJetTree), l1tEGammaGenJetPairs);
   }
   if (this -> _l1tTauCollectionTag)
   {
     edm::Handle < BXVector< l1t::Tau > > l1tTauCollectionHandle;
     iEvent.getByToken(*(this -> _l1tTauCollectionTag), l1tTauCollectionHandle);
     auto l1tTauGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tTauCollectionHandle);
-    this -> _fillTreeWithMatchedPairs<>(*(this -> _l1tTauGenJetTree), l1tTauGenJetPairs);
+    this -> _fillTreeWithMatchedPairs(*(this -> _l1tTauGenJetTree), l1tTauGenJetPairs);
   }
 
-  for (const reco::GenJet & genJet : *genJetCollectionHandle)
+  for (auto genJetIterator = genJetCollectionHandle -> begin(); genJetIterator != genJetCollectionHandle -> end(); genJetIterator++ )
   {
-    this -> _genJetPtEtaPhi.pt = genJet.pt();
-    this -> _genJetPtEtaPhi.eta = genJet.eta();
-    this -> _genJetPtEtaPhi.phi = genJet.phi();
+    this -> _genJetParticle.id = (genJetIterator - genJetCollectionHandle->begin());
+    this -> _genJetParticle.pt = genJetIterator -> pt();
+    this -> _genJetParticle.eta = genJetIterator -> eta();
+    this -> _genJetParticle.phi = genJetIterator -> phi();
     this -> _genJetTree -> Fill();
   }
 
@@ -276,33 +285,33 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
 
 }
 
-// Another lovely template function to fill trees
-template <class T> // <3
 void
 MatchGenJetWithL1Objects::_fillTreeWithMatchedPairs
 (
   TTree & aTree,
-  const std::vector < std::tuple <const T*, const reco::GenJet*, float > > & matchedL1TObjectJetPairs
+  const std::vector < std::tuple <Particle, Particle, float > > & matchedL1TObjectJetPairs
 )
 {
   for (const auto & matchTuple : matchedL1TObjectJetPairs)
   {
-    const T* l1tObject = std::get<0>(matchTuple);
-    const reco::GenJet* genJet = std::get<1>(matchTuple);
+    const Particle & l1tObject = std::get<0>(matchTuple);
+    const Particle & genJet = std::get<1>(matchTuple);
     float deltaR2 = std::get<2>(matchTuple);
-    this -> _genJetPtEtaPhi.pt = genJet -> pt();
-    this -> _genJetPtEtaPhi.eta = genJet -> eta();
-    this -> _genJetPtEtaPhi.phi = genJet -> phi();
-    this -> _l1tObjectPtEtaPhi.pt = l1tObject -> pt();
-    this -> _l1tObjectPtEtaPhi.eta = l1tObject -> eta();
-    this -> _l1tObjectPtEtaPhi.phi = l1tObject -> phi();
+    this -> _genJetParticle.id = genJet.id;
+    this -> _genJetParticle.pt = genJet.pt;
+    this -> _genJetParticle.eta = genJet.eta;
+    this -> _genJetParticle.phi = genJet.phi;
+    this -> _l1tObjectParticle.id = l1tObject.id;
+    this -> _l1tObjectParticle.pt = l1tObject.pt;
+    this -> _l1tObjectParticle.eta = l1tObject.eta;
+    this -> _l1tObjectParticle.phi = l1tObject.phi;
     this -> _deltaR2 = deltaR2;
     aTree.Fill();
   }
 }
 
 template <class T> // <3
-const std::vector <std::tuple < const T *, const reco::GenJet *, float > > 
+const std::vector <std::tuple < Particle, Particle, float > > 
 MatchGenJetWithL1Objects::_matchGenJetWithL1Object
 (
   const edm::Handle < std::vector< reco::GenJet > > & genJetCollectionHandle,
@@ -310,7 +319,7 @@ MatchGenJetWithL1Objects::_matchGenJetWithL1Object
 )
 {
 
-  std::vector< std::tuple < const T *, const reco::GenJet * , float > > l1tObjectGenJetPairs;
+  std::vector< std::tuple < Particle , Particle , float > > l1tObjectGenJetPairs;
   // for each object in the l1t collection we look for the closest jet in a wide range
   for (
     typename BXVector<T>::const_iterator bx0Iterator = l1tObjectCollectionHandle -> begin(0);
@@ -320,18 +329,28 @@ MatchGenJetWithL1Objects::_matchGenJetWithL1Object
   {
     
     bool foundMatch = false;
-    const T & l1tObject = *bx0Iterator;
     float dr2Min = 25; // i.e. dr = 5
-    std::tuple<const T *, const reco::GenJet *, float > l1tObjectGenJetPair;
+    std::tuple<Particle, Particle, float > l1tObjectGenJetPair;
     
-    for (const reco::GenJet & genJet : *genJetCollectionHandle)
+    Particle & matchedL1TObject = std::get<0>(l1tObjectGenJetPair);
+    matchedL1TObject.id = (bx0Iterator - l1tObjectCollectionHandle -> begin(0));
+    matchedL1TObject.pt = bx0Iterator -> pt();
+    matchedL1TObject.phi = bx0Iterator -> phi();
+    matchedL1TObject.eta = bx0Iterator -> eta();
+    
+    for (auto genJetIterator = genJetCollectionHandle -> begin(); genJetIterator != genJetCollectionHandle -> end(); genJetIterator++ )
     {
-      float dr2 = reco::deltaR2(l1tObject, genJet);
+      float dr2 = reco::deltaR2(*bx0Iterator, *genJetIterator);
       if (dr2 < dr2Min)
       {
-        foundMatch = true;
+        Particle & matchedGenJet = std::get<1>(l1tObjectGenJetPair);
+        std::get<2>(l1tObjectGenJetPair) = dr2;
         dr2Min = dr2;
-        l1tObjectGenJetPair = std::make_tuple(&l1tObject, &genJet, dr2Min);
+        matchedGenJet.id = (genJetIterator - genJetCollectionHandle -> begin());
+        matchedGenJet.pt = genJetIterator -> pt();
+        matchedGenJet.phi = genJetIterator -> phi();
+        matchedGenJet.eta = genJetIterator -> eta();
+        foundMatch = true;
       }
     }
     
