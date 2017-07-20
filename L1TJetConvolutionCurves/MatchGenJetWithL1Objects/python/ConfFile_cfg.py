@@ -2,10 +2,11 @@ import FWCore.ParameterSet.Config as cms
 import FWCore.ParameterSet.VarParsing as VarParsing
 from L1TJetConvolutionCurves.MatchGenJetWithL1Objects.source_QCD_Pt_15_3000_splitted import *
 
-process = cms.Process("MatchGenJetWithL1Objects")
+#process = cms.Process("MatchGenJetWithL1Objects")
+process = cms.Process("SaveEvent")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.MessageLogger.cerr.FwkReport.reportEvery = 100
+process.MessageLogger.cerr.FwkReport.reportEvery = 1
 
 options = VarParsing.VarParsing ('analysis')
 options.register ('source',
@@ -17,12 +18,19 @@ options.outputFile = 'l1tObjectGenJetMatching.root'
 options.source = "source_0"
 options.parseArguments()
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(500) )
 
 if options.source:
   process.source = locals()[options.source]
 
 process.TFileService = cms.Service('TFileService', fileName = cms.string(options.outputFile))
+
+process.out = cms.OutputModule("PoolOutputModule",
+    fileName = cms.untracked.string('myOutputFile.root'),
+    SelectEvents = cms.untracked.PSet(
+      SelectEvents = cms.vstring("p")
+    )
+)
 
 process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
   genJetCollectionTag = cms.InputTag("ak4GenJets"),
@@ -32,4 +40,12 @@ process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
   l1tEGammaCollectionTag = cms.InputTag("simCaloStage2Digis"),
 )
 
-process.p = cms.Path(process.MatchGenJetWithL1Objects)  
+process.SaveEvent = cms.EDProducer('SaveEvent'
+)
+
+process.EventNumberFilter = cms.EDFilter('EventNumberFilter'
+)
+
+process.p = cms.Path(process.EventNumberFilter)
+
+process.e = cms.EndPath(process.out)
