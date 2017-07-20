@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/sh
 
 #set -o xtrace
 
@@ -31,15 +31,16 @@ echo "Running CMSSW job"
 
 HOME_FOLDER="$(pwd)"
 OUTPUT_FILENAME=${jobName}_${sampleName}_${clusterId}.${processId}.root
-
 source /cvmfs/cms.cern.ch/cmsset_default.sh
-cp -r /software/sb17498/CMSSW/CMSSW_9_0_0 .
-cd CMSSW_9_0_0/src
-cmsenv
-scram b
 
 set -o xtrace
-cmsRun ${inputFile} source=${sampleName}_${processId} outputFile=${OUTPUT_FILENAME}
+cp -r /software/sb17498/CMSSW_9_0_0 .
+cd CMSSW_9_0_0/src
+cmsenv
+scramv1 b ProjectRename
+scram b
+
+cmsRun ${inputFile} source=source_${processId} outputFile=${OUTPUT_FILENAME}
 
 echo "Will save on" /FCC-hh/${HDFS_DEST}
 
