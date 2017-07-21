@@ -18,7 +18,7 @@ options.outputFile = 'l1tObjectGenJetMatching.root'
 options.source = "source_0"
 options.parseArguments()
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(500) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 if options.source:
   process.source = locals()[options.source]
@@ -46,6 +46,6 @@ process.SaveEvent = cms.EDProducer('SaveEvent'
 process.EventNumberFilter = cms.EDFilter('EventNumberFilter'
 )
 
-process.p = cms.Path(process.EventNumberFilter)
+process.p = cms.Path(process.MatchGenJetWithL1Objects)
 
-process.e = cms.EndPath(process.out)
+#process.e = cms.EndPath(process.out)
