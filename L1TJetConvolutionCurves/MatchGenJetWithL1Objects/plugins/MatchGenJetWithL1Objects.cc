@@ -105,7 +105,7 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
     float _deltaR2;
 };
 
-MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iConfig):
+MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iConfig)
 {  
   this -> _getTokens(iConfig);
   usesResource("TFileService");

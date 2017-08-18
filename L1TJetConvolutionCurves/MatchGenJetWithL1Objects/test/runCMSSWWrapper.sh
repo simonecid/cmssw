@@ -2,7 +2,7 @@
 
 #set -o xtrace
 
-while getopts "j:c:p:s:i:t:d:" o; do
+while getopts "j:c:p:i:d:" o; do
   case "${o}" in
     j)
       jobName=${OPTARG}
@@ -13,9 +13,6 @@ while getopts "j:c:p:s:i:t:d:" o; do
     p)
       processId=${OPTARG}
       ;;  
-    s)
-      sampleName=${OPTARG}
-      ;;
     i)
       inputFile=${OPTARG}
       ;;
@@ -30,7 +27,7 @@ echo "I am running on" $HOSTNAME
 echo "Running CMSSW job"
 
 HOME_FOLDER="$(pwd)"
-OUTPUT_FILENAME=${jobName}_${sampleName}_${clusterId}.${processId}.root
+OUTPUT_FILENAME=${jobName}_${clusterId}.${processId}.root
 source /cvmfs/cms.cern.ch/cmsset_default.sh
 
 set -o xtrace
