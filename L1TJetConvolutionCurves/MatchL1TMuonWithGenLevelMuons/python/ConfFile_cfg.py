@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 import FWCore.ParameterSet.VarParsing as VarParsing
-from L1TJetConvolutionCurves.MatchL1TMuonWithGenLevelMuons.source_QCD_Pt_15_3000_splitted import *
+from L1TJetConvolutionCurves.MatchGenJetWithL1Objects.source_QCD_Pt_15_3000_splitted import *
 
 process = cms.Process("MatchL1TMuonWithGenLevelMuons")
 
