@@ -33,9 +33,13 @@ source /cvmfs/cms.cern.ch/cmsset_default.sh
 set -o xtrace
 cp -r /software/sb17498/CMSSW_9_0_0 .
 cd CMSSW_9_0_0/src
+set +o xtrace
 cmsenv
+set -o xtrace
 scramv1 b ProjectRename
 scram b
+
+cmsenv
 
 cmsRun ${inputFile} source=source_${processId} outputFile=${OUTPUT_FILENAME}
 
