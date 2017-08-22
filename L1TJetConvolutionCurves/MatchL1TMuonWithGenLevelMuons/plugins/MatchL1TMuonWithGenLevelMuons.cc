@@ -215,18 +215,18 @@ MatchL1TMuonWithGenLevelMuons::analyze(const edm::Event& iEvent, const edm::Even
 
   //Debug printout
 
-    for (const auto & matchTuple : l1tMuonGenMuonPairs) 
-  {
-    const Particle & l1tMuon = std::get<0>(matchTuple);
-    const Particle & genMuon = std::get<1>(matchTuple);
-    float deltaR2 = std::get<2>(matchTuple);
-    std::cout << "MATCHED MUON:" << std::endl;
-    std::cout << "Gen-level id: " << genMuon.id << "\t L1T-level id: " << l1tMuon.id << std::endl;
-    std::cout << "Gen-level pt: " << genMuon.pt << "\t L1T-level pt: " << l1tMuon.pt << std::endl;
-    std::cout << "Gen-level eta: " << genMuon.eta << "\t L1T-level eta: " << l1tMuon.eta << std::endl;
-    std::cout << "Gen-level phi: " << genMuon.phi << "\t L1T-level phi: " << l1tMuon.phi << std::endl;
-    std::cout << "deltaR2: " << deltaR2 << std::endl;
-  }
+  //for (const auto & matchTuple : l1tMuonGenMuonPairs) 
+  //{
+  //  const Particle & l1tMuon = std::get<0>(matchTuple);
+  //  const Particle & genMuon = std::get<1>(matchTuple);
+  //  float deltaR2 = std::get<2>(matchTuple);
+  //  std::cout << "MATCHED MUON:" << std::endl;
+  //  std::cout << "Gen-level id: " << genMuon.id << "\t L1T-level id: " << l1tMuon.id << std::endl;
+  //  std::cout << "Gen-level pt: " << genMuon.pt << "\t L1T-level pt: " << l1tMuon.pt << std::endl;
+  //  std::cout << "Gen-level eta: " << genMuon.eta << "\t L1T-level eta: " << l1tMuon.eta << std::endl;
+  //  std::cout << "Gen-level phi: " << genMuon.phi << "\t L1T-level phi: " << l1tMuon.phi << std::endl;
+  //  std::cout << "deltaR2: " << deltaR2 << std::endl;
+  //}
 
   //Saving all the gen muons
 
