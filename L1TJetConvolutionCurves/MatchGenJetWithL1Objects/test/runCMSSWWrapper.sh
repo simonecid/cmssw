@@ -36,6 +36,7 @@ cd CMSSW_9_0_0/src
 cmsenv
 scramv1 b ProjectRename
 scram b
+cmsenv
 
 cmsRun ${inputFile} source=source_${processId} outputFile=${OUTPUT_FILENAME}
 
