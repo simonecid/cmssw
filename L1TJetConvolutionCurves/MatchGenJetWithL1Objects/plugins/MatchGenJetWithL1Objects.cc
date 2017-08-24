@@ -265,6 +265,7 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tTauGenJetTree), l1tTauGenJetPairs);
   }
 
+
   for (auto genJetIterator = genJetCollectionHandle -> begin(); genJetIterator != genJetCollectionHandle -> end(); genJetIterator++ )
   {
     this -> _genJetParticle.id = (genJetIterator - genJetCollectionHandle->begin());
@@ -302,6 +303,9 @@ MatchGenJetWithL1Objects::_fillTreeWithMatchedPairs
   }
 }
 
+// Considers a genJet and looks for every l1tObject within that radius
+//If more than 1 object is present the highest momentum one is considered and saved
+
 template <class T> // <3
 const std::vector <std::tuple < Particle, Particle, float > > 
 MatchGenJetWithL1Objects::_matchGenJetWithL1Object
@@ -313,35 +317,39 @@ MatchGenJetWithL1Objects::_matchGenJetWithL1Object
 
   std::vector< std::tuple < Particle , Particle , float > > l1tObjectGenJetPairs;
   // for each object in the l1t collection we look for the closest jet in a wide range
-  for (
-    typename BXVector<T>::const_iterator bx0Iterator = l1tObjectCollectionHandle -> begin(0);
-    bx0Iterator != l1tObjectCollectionHandle -> end(0);
-    bx0Iterator++
-  )
+  for (auto genJetIterator = genJetCollectionHandle -> begin(); genJetIterator != genJetCollectionHandle -> end(); genJetIterator++ )
   {
     
     bool foundMatch = false;
-    float dr2Min = 25; // i.e. dr = 5
+    float dr2Min = 0.25; // i.e. dr = 5
     std::tuple<Particle, Particle, float > l1tObjectGenJetPair;
     
-    Particle & matchedL1TObject = std::get<0>(l1tObjectGenJetPair);
-    matchedL1TObject.id = (bx0Iterator - l1tObjectCollectionHandle -> begin(0));
-    matchedL1TObject.pt = bx0Iterator -> pt();
-    matchedL1TObject.phi = bx0Iterator -> phi();
-    matchedL1TObject.eta = bx0Iterator -> eta();
+    Particle & matchedGenJet = std::get<1>(l1tObjectGenJetPair);
+    matchedGenJet.id = (genJetIterator - genJetCollectionHandle -> begin());
+    matchedGenJet.pt = genJetIterator -> pt();
+    matchedGenJet.phi = genJetIterator -> phi();
+    matchedGenJet.eta = genJetIterator -> eta();
+
+    float ptMax = 0;
     
-    for (auto genJetIterator = genJetCollectionHandle -> begin(); genJetIterator != genJetCollectionHandle -> end(); genJetIterator++ )
+    for (
+      typename BXVector<T>::const_iterator bx0Iterator = l1tObjectCollectionHandle -> begin(0);
+      bx0Iterator != l1tObjectCollectionHandle -> end(0);
+      bx0Iterator++
+    )
     {
       float dr2 = reco::deltaR2(*bx0Iterator, *genJetIterator);
-      if (dr2 < dr2Min)
+      
+      if ((dr2 < dr2Min) && (bx0Iterator -> pt() > ptMax))
       {
-        Particle & matchedGenJet = std::get<1>(l1tObjectGenJetPair);
+        Particle & matchedL1TObject = std::get<0>(l1tObjectGenJetPair);
+        matchedL1TObject.id = (bx0Iterator - l1tObjectCollectionHandle -> begin(0));
+        matchedL1TObject.pt = bx0Iterator -> pt();
+        matchedL1TObject.phi = bx0Iterator -> phi();
+        matchedL1TObject.eta = bx0Iterator -> eta();
+        ptMax = matchedL1TObject.pt;
         std::get<2>(l1tObjectGenJetPair) = dr2;
-        dr2Min = dr2;
-        matchedGenJet.id = (genJetIterator - genJetCollectionHandle -> begin());
-        matchedGenJet.pt = genJetIterator -> pt();
-        matchedGenJet.phi = genJetIterator -> phi();
-        matchedGenJet.eta = genJetIterator -> eta();
+        //dr2Min = dr2;
         foundMatch = true;
       }
     }
