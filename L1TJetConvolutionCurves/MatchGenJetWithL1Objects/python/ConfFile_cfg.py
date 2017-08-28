@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 import FWCore.ParameterSet.VarParsing as VarParsing
-from L1TJetConvolutionCurves.MatchGenJetWithL1Objects.source_QCD_Pt_15_3000_splitted import *
+from importlib import import_module
+#from L1TJetConvolutionCurves.MatchGenJetWithL1Objects.source_SingleNeutrinoPU140_splitted import *
 
 #process = cms.Process("MatchGenJetWithL1Objects")
 process = cms.Process("SaveEvent")
@@ -16,12 +17,17 @@ options.register ('source',
                   "Source sample")
 options.outputFile = 'l1tObjectGenJetMatching.root'
 options.source = "source_0"
+options.register ('sourceFile',
+                  "", # default value
+                  VarParsing.VarParsing.multiplicity.singleton, # singleton or list
+                  VarParsing.VarParsing.varType.string,          # string, int, or float
+                  "File containing the splitted sources")
+options.sourceFile = "source_SingleNeutrinoPU140_splitted"
 options.parseArguments()
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
 
-if options.source:
-  process.source = locals()[options.source]
+process.source = getattr(import_module("L1TJetConvolutionCurves.MatchGenJetWithL1Objects." + options.sourceFile), options.source)
 
 process.TFileService = cms.Service('TFileService', fileName = cms.string(options.outputFile))
 
