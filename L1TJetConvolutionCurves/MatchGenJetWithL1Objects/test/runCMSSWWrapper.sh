@@ -2,7 +2,7 @@
 
 #set -o xtrace
 
-while getopts "j:c:p:i:d:" o; do
+while getopts "j:c:p:i:d:s:" o; do
   case "${o}" in
     j)
       jobName=${OPTARG}
@@ -18,6 +18,9 @@ while getopts "j:c:p:i:d:" o; do
       ;;
     d)
       HDFS_DEST=${OPTARG}
+      ;;
+    s)
+      SAMPLE_FILE=${OPTARG}
       ;;
     esac
 done
@@ -38,7 +41,7 @@ scramv1 b ProjectRename
 scram b
 cmsenv
 
-cmsRun ${inputFile} source=source_${processId} outputFile=${OUTPUT_FILENAME}
+cmsRun ${inputFile} source=source_${processId} outputFile=${OUTPUT_FILENAME} sourceFile=${SAMPLE_FILE}
 
 echo "Will save on" /FCC-hh/${HDFS_DEST}
 
