@@ -264,63 +264,89 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
   edm::Handle < std::vector< reco::GenJet > > genJetCollectionHandle;
   iEvent.getByToken(*(this -> _genJetCollectionTag), genJetCollectionHandle);
 
+  // I want to save for each event the highest momentum l1t(Muon/EGamma/Tau/Jet) for performance purposes
+
+  
+  float maxPt = 0;
   if (this -> _l1tMuonCollectionTag)
   {
     edm::Handle < BXVector< l1t::Muon > > l1tMuonCollectionHandle;
     iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
     auto l1tMuonGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle);
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
-    for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(); l1tMuonIterator != l1tMuonCollectionHandle -> end(); l1tMuonIterator++ )
+    for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
     {
-      this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin());
-      this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
-      this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
-      this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
+      if (l1tMuonIterator -> pt() > maxPt)
+      {
+        maxPt = l1tMuonIterator -> pt();
+        this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
+        this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
+        this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
+        this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
+      }
       this -> _l1tMuonTree -> Fill();
     }
   }
+  
+  maxPt = 0;
   if (this -> _l1tJetCollectionTag)
   {
     edm::Handle < BXVector< l1t::Jet > > l1tJetCollectionHandle;
     iEvent.getByToken(*(this -> _l1tJetCollectionTag), l1tJetCollectionHandle);
     auto l1tJetGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tJetCollectionHandle);
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tJetGenJetTree), l1tJetGenJetPairs);
-    for (auto l1tJetIterator = l1tJetCollectionHandle -> begin(); l1tJetIterator != l1tJetCollectionHandle -> end(); l1tJetIterator++ )
+    for (auto l1tJetIterator = l1tJetCollectionHandle -> begin(0); l1tJetIterator != l1tJetCollectionHandle -> end(0); l1tJetIterator++ )
     {
-      this -> _l1tObjectParticle.id = (l1tJetIterator - l1tJetCollectionHandle->begin());
-      this -> _l1tObjectParticle.pt = l1tJetIterator -> pt();
-      this -> _l1tObjectParticle.eta = l1tJetIterator -> eta();
-      this -> _l1tObjectParticle.phi = l1tJetIterator -> phi();
+      if (l1tJetIterator -> pt() > maxPt)
+      {
+        maxPt = l1tJetIterator -> pt();
+        this -> _l1tObjectParticle.id = (l1tJetIterator - l1tJetCollectionHandle->begin(0));
+        this -> _l1tObjectParticle.pt = l1tJetIterator -> pt();
+        this -> _l1tObjectParticle.eta = l1tJetIterator -> eta();
+        this -> _l1tObjectParticle.phi = l1tJetIterator -> phi();
+      }
       this -> _l1tJetTree -> Fill();
     }
   }
+  
+  maxPt = 0;
   if (this -> _l1tEGammaCollectionTag)
   {
     edm::Handle < BXVector< l1t::EGamma > > l1tEGammaCollectionHandle;
     iEvent.getByToken(*(this -> _l1tEGammaCollectionTag), l1tEGammaCollectionHandle);
     auto l1tEGammaGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tEGammaCollectionHandle);
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tEGammaGenJetTree), l1tEGammaGenJetPairs);
-    for (auto l1tEGammaIterator = l1tEGammaCollectionHandle -> begin(); l1tEGammaIterator != l1tEGammaCollectionHandle -> end(); l1tEGammaIterator++ )
+    for (auto l1tEGammaIterator = l1tEGammaCollectionHandle -> begin(0); l1tEGammaIterator != l1tEGammaCollectionHandle -> end(0); l1tEGammaIterator++ )
     {
-      this -> _l1tObjectParticle.id = (l1tEGammaIterator - l1tEGammaCollectionHandle->begin());
-      this -> _l1tObjectParticle.pt = l1tEGammaIterator -> pt();
-      this -> _l1tObjectParticle.eta = l1tEGammaIterator -> eta();
-      this -> _l1tObjectParticle.phi = l1tEGammaIterator -> phi();
+      if (l1tEGammaIterator -> pt() > maxPt)
+      {
+        maxPt = l1tEGammaIterator -> pt();
+        this -> _l1tObjectParticle.id = (l1tEGammaIterator - l1tEGammaCollectionHandle->begin(0));
+        this -> _l1tObjectParticle.pt = l1tEGammaIterator -> pt();
+        this -> _l1tObjectParticle.eta = l1tEGammaIterator -> eta();
+        this -> _l1tObjectParticle.phi = l1tEGammaIterator -> phi();
+      }
       this -> _l1tEGammaTree -> Fill();
     }
   }
+  
+  maxPt = 0;
   if (this -> _l1tTauCollectionTag)
   {
     edm::Handle < BXVector< l1t::Tau > > l1tTauCollectionHandle;
     iEvent.getByToken(*(this -> _l1tTauCollectionTag), l1tTauCollectionHandle);
     auto l1tTauGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tTauCollectionHandle);
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tTauGenJetTree), l1tTauGenJetPairs);
-    for (auto l1tTauIterator = l1tTauCollectionHandle -> begin(); l1tTauIterator != l1tTauCollectionHandle -> end(); l1tTauIterator++ )
+    for (auto l1tTauIterator = l1tTauCollectionHandle -> begin(0); l1tTauIterator != l1tTauCollectionHandle -> end(0); l1tTauIterator++ )
     {
-      this -> _l1tObjectParticle.id = (l1tTauIterator - l1tTauCollectionHandle->begin());
-      this -> _l1tObjectParticle.pt = l1tTauIterator -> pt();
-      this -> _l1tObjectParticle.eta = l1tTauIterator -> eta();
-      this -> _l1tObjectParticle.phi = l1tTauIterator -> phi();
+      if (l1tTauIterator -> pt() > maxPt)
+      {
+        maxPt = l1tTauIterator -> pt();
+        this -> _l1tObjectParticle.id = (l1tTauIterator - l1tTauCollectionHandle->begin(0));
+        this -> _l1tObjectParticle.pt = l1tTauIterator -> pt();
+        this -> _l1tObjectParticle.eta = l1tTauIterator -> eta();
+        this -> _l1tObjectParticle.phi = l1tTauIterator -> phi();
+      }
       this -> _l1tTauTree -> Fill();
     }
   }
