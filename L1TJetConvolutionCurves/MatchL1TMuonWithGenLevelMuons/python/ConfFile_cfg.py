@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 import FWCore.ParameterSet.VarParsing as VarParsing
-from L1TJetConvolutionCurves.MatchL1TMuonWithGenLevelMuons.source_QCD_Pt_15_3000_splitted import *
+from L1TJetConvolutionCurves.MatchL1TMuonWithGenLevelMuons.source_SingleNeutrinoPU140_splitted import *
 
 process = cms.Process("MatchL1TMuonWithGenLevelMuons")
 
@@ -17,7 +17,7 @@ options.outputFile = 'MatchL1TMuonWithGenLevelMuons.root'
 options.source = "source_0"
 options.parseArguments()
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 
 if options.source:
   process.source = locals()[options.source]
