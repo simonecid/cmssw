@@ -37,11 +37,14 @@ echo "Running heppy job"
 source /cvmfs/cms.cern.ch/cmsset_default.sh
 
 set -o xtrace
+HOME_FOLDER="$(pwd)"
+SAVE_DESTINATION="${jobName}_${sourceFile}"
 cp -r /software/sb17498/CMSSW_9_0_0 .
-cd CMSSW_9_0_0/src
 cmsenv
 scramv1 b ProjectRename
+cd CMSSW_9_0_0/src/PhysicsTools
 scram b
+cd ..
 cmsenv
 
 mkdir ${SAVE_DESTINATION}
