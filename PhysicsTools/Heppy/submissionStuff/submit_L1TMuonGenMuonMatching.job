@@ -1,7 +1,7 @@
 Universe = vanilla
 job = L1TMuonGenMuonMatching
 cmd = PhysicsTools/Heppy/submissionStuff/runHeppyConfigFile.sh
-args= -j $(job) -c $(cluster) -p $(process) -i test/convolutionCurvesJetBottom_cfg.py 
+args= -j $(job) -c $(cluster) -p $(process) -i PhysicsTools/Heppy/test/MatchL1TMuonsWithGenMuons.py -s source_QCD_Pt_15_3000_splitted
 # Better not to put logs in the same folder, as they are plenty
 output = /storage/sb17498/logs/heppy/$(job)_$(cluster).$(process).out
 error = /storage/sb17498/logs/heppy/$(job)_$(cluster).$(process).err
