@@ -45,7 +45,7 @@ set +o xtrace
 cmsenv
 set -o xtrace
 scramv1 b ProjectRename
-cd CMSSW_9_0_0/src/PhysicsTools
+cd PhysicsTools
 scram b
 cd ..
 set +o xtrace
