@@ -40,12 +40,16 @@ set -o xtrace
 HOME_FOLDER="$(pwd)"
 SAVE_DESTINATION="${jobName}_${sourceFile}"
 cp -r /software/sb17498/CMSSW_9_0_0 .
+set +o xtrace
 cmsenv
+set -o xtrace
 scramv1 b ProjectRename
 cd CMSSW_9_0_0/src/PhysicsTools
 scram b
 cd ..
+set +o xtrace
 cmsenv
+set -o xtrace
 
 mkdir ${SAVE_DESTINATION}
 
