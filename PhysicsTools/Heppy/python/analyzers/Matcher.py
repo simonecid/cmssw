@@ -30,7 +30,6 @@ def matchObjectCollection( objects, matchCollection, deltaR2Max, filter = lambda
     else:
       bm, dr2 = bestMatch( object, [mob for mob in matchCollection if filter(object,mob)] )
       if dr2<deltaR2Max:
-        import pdb; pdb.set_trace()        
         pairs[x] = bm
       else:
         pairs[x] = None            
@@ -83,6 +82,5 @@ class Matcher(Analyzer):
       if match:
         drname = 'dr'
         dr = deltaR(ptc, match)
-        import pdb; pdb.set_trace()
         setattr(ptc, drname, dr)
       x += 1
