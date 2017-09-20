@@ -30,10 +30,10 @@ logging.basicConfig(level=logging.WARNING)
 selectedComponents = [cfg.MCComponent(
   sampleName,
   files = [
-#    "root://xrootd-cms.infn.it/" + path for path in sample.fileNames
+    "root://xrootd-cms.infn.it/" + path for path in sample.fileNames
 #    "/hdfs/dpm/phy.bris.ac.uk/home/cms/store/mc/PhaseIISpring17D/SingleNeutrino/GEN-SIM-DIGI-RAW/PU140_90X_upgrade2023_realistic_v9-v1/70000/061FB060-8D26-E711-9DF5-0242AC130002.root"
 #    "root://xrootd-cms.infn.it//store/mc/PhaseIISpring17D/QCD_Pt-15to3000_Tune4C_14TeV_pythia8/GEN-SIM-DIGI-RAW/NoPU_90X_upgrade2023_realistic_v9-v1/100000/0013DDCD-8F46-E711-B875-0CC47A537688.root"
-    "/storage/sb17498/CMSSW/CMSSW_9_0_0/test/0013DDCD-8F46-E711-B875-0CC47A537688.root"
+#    "/storage/sb17498/CMSSW/CMSSW_9_0_0/test/0013DDCD-8F46-E711-B875-0CC47A537688.root"
   ]
 )]
 
