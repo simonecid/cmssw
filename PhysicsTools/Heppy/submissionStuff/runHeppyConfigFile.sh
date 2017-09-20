@@ -54,7 +54,7 @@ set -o xtrace
 
 mkdir ${SAVE_DESTINATION}
 
-heppy ${HOME_FOLDER}/${SAVE_DESTINATION} ${inputFile} --option=sample=source_${processId} --option=sourceFile=${sourceFile} --option=outputFile=output.root -f
+heppy ${HOME_FOLDER}/${SAVE_DESTINATION} ${inputFile} --option=sample=source_${processId} --option=sourceFile=${sourceFile} --option=outputFile=output.root -f --nprint=0
 
 # Zip file
 cd ${HOME_FOLDER}
