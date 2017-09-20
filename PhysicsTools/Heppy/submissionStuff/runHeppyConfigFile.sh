@@ -34,20 +34,17 @@ echo "I am running on" $HOSTNAME
 
 echo "Running heppy job"
 
-HOME_FOLDER="$(pwd)"
-SAVE_DESTINATION="${jobName}_${sourceFile}"
+source /cvmfs/cms.cern.ch/cmsset_default.sh
+
+set -o xtrace
+cp -r /software/sb17498/CMSSW_9_0_0 .
+cd CMSSW_9_0_0/src
+cmsenv
+scramv1 b ProjectRename
+scram b
+cmsenv
 
 mkdir ${SAVE_DESTINATION}
-
-set +o xtrace
-source /software/sb17498/FCCSW/init.sh
-set -o xtrace
-
-cp -r /software/sb17498/heppy .
-cd heppy
-set +o xtrace
-source init.sh
-set -o xtrace
 
 heppy ${HOME_FOLDER}/${SAVE_DESTINATION} ${inputFile} --option=sample=source_${processId} --option=sourceFile=${sourceFile} --option=outputFile=output.root -f
 
