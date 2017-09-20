@@ -284,8 +284,8 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
         this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
         this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
       }
-      this -> _l1tMuonTree -> Fill();
     }
+    this -> _l1tMuonTree -> Fill();
   }
   
   maxPt = 0;
@@ -305,8 +305,8 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
         this -> _l1tObjectParticle.eta = l1tJetIterator -> eta();
         this -> _l1tObjectParticle.phi = l1tJetIterator -> phi();
       }
-      this -> _l1tJetTree -> Fill();
     }
+    this -> _l1tJetTree -> Fill();
   }
   
   maxPt = 0;
@@ -326,8 +326,8 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
         this -> _l1tObjectParticle.eta = l1tEGammaIterator -> eta();
         this -> _l1tObjectParticle.phi = l1tEGammaIterator -> phi();
       }
-      this -> _l1tEGammaTree -> Fill();
     }
+    this -> _l1tEGammaTree -> Fill();
   }
   
   maxPt = 0;
@@ -347,9 +347,11 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
         this -> _l1tObjectParticle.eta = l1tTauIterator -> eta();
         this -> _l1tObjectParticle.phi = l1tTauIterator -> phi();
       }
-      this -> _l1tTauTree -> Fill();
     }
+    this -> _l1tTauTree -> Fill();
   }
+
+  // Saving every genJet to get the misidentification probability
 
   for (auto genJetIterator = genJetCollectionHandle -> begin(); genJetIterator != genJetCollectionHandle -> end(); genJetIterator++ )
   {
