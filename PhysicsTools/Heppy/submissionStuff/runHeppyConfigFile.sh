@@ -40,6 +40,7 @@ set -o xtrace
 HOME_FOLDER="$(pwd)"
 SAVE_DESTINATION="${jobName}_${sourceFile}"
 cp -r /software/sb17498/CMSSW_9_0_0 .
+cd CMSSW_9_0_0/src
 set +o xtrace
 cmsenv
 set -o xtrace
