@@ -307,6 +307,7 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
       if (l1tMuonIterator -> pt() > maxPt)
       {
         maxPt = l1tMuonIterator -> pt();
+        if (l1tMuonIterator -> hwQual() < 4) continue;
         this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
         this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
         this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
