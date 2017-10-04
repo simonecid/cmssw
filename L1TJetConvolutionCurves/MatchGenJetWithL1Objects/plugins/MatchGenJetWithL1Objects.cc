@@ -485,8 +485,6 @@ MatchGenJetWithL1Objects::_matchGenJetWithL1Object
     matchedGenJet.phi = genJetIterator -> phi();
     matchedGenJet.eta = genJetIterator -> eta();
 
-    float ptMax = 0;
-    
     for (
       typename BXVector<T>::const_iterator bx0Iterator = l1tObjectCollectionHandle -> begin(0);
       bx0Iterator != l1tObjectCollectionHandle -> end(0);
@@ -495,16 +493,15 @@ MatchGenJetWithL1Objects::_matchGenJetWithL1Object
     {
       float dr2 = reco::deltaR2(*bx0Iterator, *genJetIterator);
       
-      if ((dr2 < dr2Min) && (bx0Iterator -> pt() > ptMax))
+      if ((dr2 < dr2Min))
       {
         Particle & matchedL1TObject = std::get<0>(l1tObjectGenJetPair);
         matchedL1TObject.id = (bx0Iterator - l1tObjectCollectionHandle -> begin(0));
         matchedL1TObject.pt = bx0Iterator -> pt();
         matchedL1TObject.phi = bx0Iterator -> phi();
         matchedL1TObject.eta = bx0Iterator -> eta();
-        ptMax = matchedL1TObject.pt;
         std::get<2>(l1tObjectGenJetPair) = dr2;
-        //dr2Min = dr2;
+        dr2Min = dr2;
         foundMatch = true;
       }
     }
