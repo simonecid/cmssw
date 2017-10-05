@@ -304,7 +304,8 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
     for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
     {
-      if (l1tMuonIterator -> hwQual() < 4) continue;
+      //std::cout << "Muon object w/ qual " << l1tMuonIterator -> hwQual() << std::endl;      
+      if (l1tMuonIterator -> hwQual() < 12) continue;
       if (l1tMuonIterator -> pt() > maxPt)
       {
         maxPt = l1tMuonIterator -> pt();
