@@ -3,8 +3,8 @@ import FWCore.ParameterSet.VarParsing as VarParsing
 from importlib import import_module
 #from L1TJetConvolutionCurves.MatchGenJetWithL1Objects.source_SingleNeutrinoPU140_splitted import *
 
-#process = cms.Process("MatchGenJetWithL1Objects")
-process = cms.Process("SaveEvent")
+process = cms.Process("MatchGenJetWithL1Objects")
+#process = cms.Process("SaveEvent")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
