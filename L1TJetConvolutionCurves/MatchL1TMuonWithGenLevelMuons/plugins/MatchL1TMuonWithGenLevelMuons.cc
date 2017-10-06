@@ -166,7 +166,7 @@ MatchL1TMuonWithGenLevelMuons::_matchL1TMuonWithGenLevelMuons
     bx0Iterator++
   )
   {
-    std::cout << "Muon object w/ qual " << bx0Iterator -> hwQual() << std::endl;
+    //std::cout << "Muon object w/ qual " << bx0Iterator -> hwQual() << std::endl;
     
     bool foundMatch = false;
     float dr2Min = dr2Max; 
@@ -199,7 +199,7 @@ MatchL1TMuonWithGenLevelMuons::_matchL1TMuonWithGenLevelMuons
     
     //if we have found a compatible gen jet we push the object-jet pair in a vector which will be our result
     if (foundMatch) {
-      std::cout << "Matched a muon object w/ qual " << matchedL1TObject.hwQual << std::endl;
+      //std::cout << "Matched a muon object w/ qual " << matchedL1TObject.hwQual << std::endl;
       l1tObjectGenParticlePairs.push_back(l1tObjectGenParticlePair);
     }
   }
