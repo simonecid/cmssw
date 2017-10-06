@@ -52,6 +52,12 @@ struct Particle {
   float pt, eta, phi;
 };
 
+struct TriggerObject {
+  unsigned int id;
+  float pt, eta, phi;
+  int hwQual;
+};
+
 class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedResources> {
   public:
     explicit MatchGenJetWithL1Objects(const edm::ParameterSet&);
@@ -70,7 +76,7 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
 
     // Beautiful template function to perform matching between a gen jet and whatever L1T object
     template <class T> // <3
-    const std::vector < std::tuple < Particle, Particle, float > > 
+    const std::vector < std::tuple < TriggerObject, Particle, float > > 
     _matchGenJetWithL1Object
     (
       const edm::Handle< std::vector< reco::GenJet > > &,
@@ -81,7 +87,7 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
     _fillTreeWithMatchedPairs
     (
       TTree &,
-      const std::vector < std::tuple < Particle, Particle, float > > &
+      const std::vector < std::tuple < TriggerObject, Particle, float > > &
     );
   
     edm::EDGetTokenT< std::vector< reco::GenJet > > *_genJetCollectionTag;
@@ -109,7 +115,8 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
     TTree * _genJetTree;
 
     Particle _genJetParticle;
-    Particle _l1tObjectParticle;
+    TriggerObject _l1tObjectParticle;
+    int _hwQual;
     float _deltaR2;
 };
 
@@ -140,6 +147,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tMuonGenJetTree -> Branch("l1tMuon_pt", &(this -> _l1tObjectParticle.pt), "l1tMuon_pt/F");
   this -> _l1tMuonGenJetTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectParticle.eta), "l1tMuon_eta/F");
   this -> _l1tMuonGenJetTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectParticle.phi), "l1tMuon_phi/F");
+  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_qual", &(this -> _l1tObjectParticle.hwQual), "l1tMuon_qual/i");
   this -> _l1tMuonGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
   this -> _l1tJetGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
@@ -150,6 +158,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tJetGenJetTree -> Branch("l1tJet_pt", &(this -> _l1tObjectParticle.pt), "l1tJet_pt/F");
   this -> _l1tJetGenJetTree -> Branch("l1tJet_eta", &(this -> _l1tObjectParticle.eta), "l1tJet_eta/F");
   this -> _l1tJetGenJetTree -> Branch("l1tJet_phi", &(this -> _l1tObjectParticle.phi), "l1tJet_phi/F");
+  this -> _l1tJetGenJetTree -> Branch("l1tJet_qual", &(this -> _l1tObjectParticle.hwQual), "l1tJet_qual/i");
   this -> _l1tJetGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
   this -> _l1tEGammaGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
@@ -160,6 +169,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_pt", &(this -> _l1tObjectParticle.pt), "l1tEGamma_pt/F");
   this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_eta", &(this -> _l1tObjectParticle.eta), "l1tEGamma_eta/F");
   this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_phi", &(this -> _l1tObjectParticle.phi), "l1tEGamma_phi/F");
+  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_qual", &(this -> _l1tObjectParticle.hwQual), "l1tEGamma_qual/i");
   this -> _l1tEGammaGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
   this -> _l1tTauGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
@@ -170,6 +180,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tTauGenJetTree -> Branch("l1tTau_pt", &(this -> _l1tObjectParticle.pt), "l1tTau_pt/F");
   this -> _l1tTauGenJetTree -> Branch("l1tTau_eta", &(this -> _l1tObjectParticle.eta), "l1tTau_eta/F");
   this -> _l1tTauGenJetTree -> Branch("l1tTau_phi", &(this -> _l1tObjectParticle.phi), "l1tTau_phi/F");
+  this -> _l1tTauGenJetTree -> Branch("l1tTau_qual", &(this -> _l1tObjectParticle.hwQual), "l1tTau_qual/i");
   this -> _l1tTauGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
   //Used to detemine the prob that a jet will be misidentified binned in pt
@@ -182,41 +193,50 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tEGammaTree -> Branch("l1tEGamma_pt", &(this -> _l1tObjectParticle.pt), "l1tEGamma_pt/F");
   this -> _l1tEGammaTree -> Branch("l1tEGamma_eta", &(this -> _l1tObjectParticle.eta), "l1tEGamma_eta/F");
   this -> _l1tEGammaTree -> Branch("l1tEGamma_phi", &(this -> _l1tObjectParticle.phi), "l1tEGamma_phi/F");
+  this -> _l1tEGammaTree -> Branch("l1tEGamma_qual", &(this -> _l1tObjectParticle.hwQual), "l1tEGamma_qual/i");
 
   this -> _l1tTauTree -> Branch("l1tTau_id", &(this -> _l1tObjectParticle.id), "l1tTau_id/i");
   this -> _l1tTauTree -> Branch("l1tTau_pt", &(this -> _l1tObjectParticle.pt), "l1tTau_pt/F");
   this -> _l1tTauTree -> Branch("l1tTau_eta", &(this -> _l1tObjectParticle.eta), "l1tTau_eta/F");
   this -> _l1tTauTree -> Branch("l1tTau_phi", &(this -> _l1tObjectParticle.phi), "l1tTau_phi/F");
+  this -> _l1tTauTree -> Branch("l1tTau_qual", &(this -> _l1tObjectParticle.hwQual), "l1tTau_qual/i");
 
   this -> _l1tMuonTree -> Branch("l1tMuon_id", &(this -> _l1tObjectParticle.id), "l1tMuon_id/i");
   this -> _l1tMuonTree -> Branch("l1tMuon_pt", &(this -> _l1tObjectParticle.pt), "l1tMuon_pt/F");
   this -> _l1tMuonTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectParticle.eta), "l1tMuon_eta/F");
   this -> _l1tMuonTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectParticle.phi), "l1tMuon_phi/F");
+  this -> _l1tMuonTree -> Branch("l1tMuon_qual", &(this -> _l1tObjectParticle.hwQual), "l1tMuon_qual/i");
+  
 
   this -> _l1tJetTree -> Branch("l1tJet_id", &(this -> _l1tObjectParticle.id), "l1tJet_id/i");
   this -> _l1tJetTree -> Branch("l1tJet_pt", &(this -> _l1tObjectParticle.pt), "l1tJet_pt/F");
   this -> _l1tJetTree -> Branch("l1tJet_eta", &(this -> _l1tObjectParticle.eta), "l1tJet_eta/F");
   this -> _l1tJetTree -> Branch("l1tJet_phi", &(this -> _l1tObjectParticle.phi), "l1tJet_phi/F");
-  
+  this -> _l1tJetTree -> Branch("l1tJet_qual", &(this -> _l1tObjectParticle.hwQual), "l1tJet_qual/i");
+
   this -> _l1tLeadingEGammaTree -> Branch("l1tEGamma_id", &(this -> _l1tObjectParticle.id), "l1tEGamma_id/i");
   this -> _l1tLeadingEGammaTree -> Branch("l1tEGamma_pt", &(this -> _l1tObjectParticle.pt), "l1tEGamma_pt/F");
   this -> _l1tLeadingEGammaTree -> Branch("l1tEGamma_eta", &(this -> _l1tObjectParticle.eta), "l1tEGamma_eta/F");
   this -> _l1tLeadingEGammaTree -> Branch("l1tEGamma_phi", &(this -> _l1tObjectParticle.phi), "l1tEGamma_phi/F");
+  this -> _l1tLeadingEGammaTree -> Branch("l1tEGamma_qual", &(this -> _l1tObjectParticle.hwQual), "l1tEGamma_qual/i");
 
   this -> _l1tLeadingTauTree -> Branch("l1tTau_id", &(this -> _l1tObjectParticle.id), "l1tTau_id/i");
   this -> _l1tLeadingTauTree -> Branch("l1tTau_pt", &(this -> _l1tObjectParticle.pt), "l1tTau_pt/F");
   this -> _l1tLeadingTauTree -> Branch("l1tTau_eta", &(this -> _l1tObjectParticle.eta), "l1tTau_eta/F");
   this -> _l1tLeadingTauTree -> Branch("l1tTau_phi", &(this -> _l1tObjectParticle.phi), "l1tTau_phi/F");
+  this -> _l1tLeadingTauTree -> Branch("l1tTau_qual", &(this -> _l1tObjectParticle.hwQual), "l1tTau_qual/i");
 
   this -> _l1tLeadingMuonTree -> Branch("l1tMuon_id", &(this -> _l1tObjectParticle.id), "l1tMuon_id/i");
   this -> _l1tLeadingMuonTree -> Branch("l1tMuon_pt", &(this -> _l1tObjectParticle.pt), "l1tMuon_pt/F");
   this -> _l1tLeadingMuonTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectParticle.eta), "l1tMuon_eta/F");
   this -> _l1tLeadingMuonTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectParticle.phi), "l1tMuon_phi/F");
+  this -> _l1tLeadingMuonTree -> Branch("l1tMuon_qual", &(this -> _l1tObjectParticle.hwQual), "l1tMuon_qual/i");  
 
   this -> _l1tLeadingJetTree -> Branch("l1tJet_id", &(this -> _l1tObjectParticle.id), "l1tJet_id/i");
   this -> _l1tLeadingJetTree -> Branch("l1tJet_pt", &(this -> _l1tObjectParticle.pt), "l1tJet_pt/F");
   this -> _l1tLeadingJetTree -> Branch("l1tJet_eta", &(this -> _l1tObjectParticle.eta), "l1tJet_eta/F");
   this -> _l1tLeadingJetTree -> Branch("l1tJet_phi", &(this -> _l1tObjectParticle.phi), "l1tJet_phi/F");
+  this -> _l1tLeadingJetTree -> Branch("l1tJet_qual", &(this -> _l1tObjectParticle.hwQual), "l1tJet_qual/i");
 
 }
 
@@ -295,27 +315,32 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
   // I want to save for each event the highest momentum l1t(Muon/EGamma/Tau/Jet) for performance purposes
 
   
-  float maxPt = 0;
   if (this -> _l1tMuonCollectionTag)
   {
     edm::Handle < BXVector< l1t::Muon > > l1tMuonCollectionHandle;
     iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
     auto l1tMuonGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle);
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
+    float maxPt = 0;
+    bool save = false;
     for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
     {
-      //std::cout << "Muon object w/ qual " << l1tMuonIterator -> hwQual() << std::endl;      
-      if (l1tMuonIterator -> hwQual() < 12) continue;
+      if (l1tMuonIterator -> hwQual() < 8) continue;
       if (l1tMuonIterator -> pt() > maxPt)
       {
+        save = true;
         maxPt = l1tMuonIterator -> pt();
+        this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
         this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
         this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
         this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
         this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
       }
     }
-    if (l1tMuonCollectionHandle -> begin(0) != l1tMuonCollectionHandle -> end(0)) this -> _l1tLeadingMuonTree -> Fill();
+    if (save) {
+      std::cout << "I am saving a muon object w/ qual " << this -> _l1tObjectParticle.hwQual << std::endl;      
+      this -> _l1tLeadingMuonTree -> Fill();
+    }
     
     for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
     {
@@ -323,30 +348,34 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
       this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
       this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
       this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
+      this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
       this -> _l1tMuonTree -> Fill();
     }
     
   }
   
-  maxPt = 0;
   if (this -> _l1tJetCollectionTag)
   {
     edm::Handle < BXVector< l1t::Jet > > l1tJetCollectionHandle;
     iEvent.getByToken(*(this -> _l1tJetCollectionTag), l1tJetCollectionHandle);
     auto l1tJetGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tJetCollectionHandle);
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tJetGenJetTree), l1tJetGenJetPairs);
+    float maxPt = 0;
+    bool save = false;
     for (auto l1tJetIterator = l1tJetCollectionHandle -> begin(0); l1tJetIterator != l1tJetCollectionHandle -> end(0); l1tJetIterator++ )
     {
       if (l1tJetIterator -> pt() > maxPt)
       {
+        save = true;        
         maxPt = l1tJetIterator -> pt();
+        this -> _l1tObjectParticle.hwQual = l1tJetIterator -> hwQual();      
         this -> _l1tObjectParticle.id = (l1tJetIterator - l1tJetCollectionHandle->begin(0));
         this -> _l1tObjectParticle.pt = l1tJetIterator -> pt();
         this -> _l1tObjectParticle.eta = l1tJetIterator -> eta();
         this -> _l1tObjectParticle.phi = l1tJetIterator -> phi();
       }
     }
-    if (l1tJetCollectionHandle -> begin(0) != l1tJetCollectionHandle -> end(0)) this -> _l1tLeadingJetTree -> Fill();
+    if (save) this -> _l1tLeadingJetTree -> Fill();
     
     for (auto l1tJetIterator = l1tJetCollectionHandle -> begin(0); l1tJetIterator != l1tJetCollectionHandle -> end(0); l1tJetIterator++ )
     {
@@ -354,30 +383,34 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
       this -> _l1tObjectParticle.pt = l1tJetIterator -> pt();
       this -> _l1tObjectParticle.eta = l1tJetIterator -> eta();
       this -> _l1tObjectParticle.phi = l1tJetIterator -> phi();
+      this -> _l1tObjectParticle.hwQual = l1tJetIterator -> hwQual();            
       this -> _l1tJetTree -> Fill();
     }
     
   }
   
-  maxPt = 0;
   if (this -> _l1tEGammaCollectionTag)
   {
     edm::Handle < BXVector< l1t::EGamma > > l1tEGammaCollectionHandle;
     iEvent.getByToken(*(this -> _l1tEGammaCollectionTag), l1tEGammaCollectionHandle);
     auto l1tEGammaGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tEGammaCollectionHandle);
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tEGammaGenJetTree), l1tEGammaGenJetPairs);
+    float maxPt = 0;
+    bool save = false;
     for (auto l1tEGammaIterator = l1tEGammaCollectionHandle -> begin(0); l1tEGammaIterator != l1tEGammaCollectionHandle -> end(0); l1tEGammaIterator++ )
     {
       if (l1tEGammaIterator -> pt() > maxPt)
       {
+        save = true;
         maxPt = l1tEGammaIterator -> pt();
+        this -> _l1tObjectParticle.hwQual = l1tEGammaIterator -> hwQual();        
         this -> _l1tObjectParticle.id = (l1tEGammaIterator - l1tEGammaCollectionHandle->begin(0));
         this -> _l1tObjectParticle.pt = l1tEGammaIterator -> pt();
         this -> _l1tObjectParticle.eta = l1tEGammaIterator -> eta();
         this -> _l1tObjectParticle.phi = l1tEGammaIterator -> phi();
       }
     }
-    if (l1tEGammaCollectionHandle -> begin(0) != l1tEGammaCollectionHandle -> end(0)) this -> _l1tLeadingEGammaTree -> Fill();
+    if (save) this -> _l1tLeadingEGammaTree -> Fill();
     
     for (auto l1tEGammaIterator = l1tEGammaCollectionHandle -> begin(0); l1tEGammaIterator != l1tEGammaCollectionHandle -> end(0); l1tEGammaIterator++ )
     {
@@ -385,36 +418,41 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
       this -> _l1tObjectParticle.pt = l1tEGammaIterator -> pt();
       this -> _l1tObjectParticle.eta = l1tEGammaIterator -> eta();
       this -> _l1tObjectParticle.phi = l1tEGammaIterator -> phi();
+      this -> _l1tObjectParticle.hwQual = l1tEGammaIterator -> hwQual();                  
       this -> _l1tEGammaTree -> Fill();
     }
     
   }
   
-  maxPt = 0;
   if (this -> _l1tTauCollectionTag)
   {
     edm::Handle < BXVector< l1t::Tau > > l1tTauCollectionHandle;
     iEvent.getByToken(*(this -> _l1tTauCollectionTag), l1tTauCollectionHandle);
     auto l1tTauGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tTauCollectionHandle);
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tTauGenJetTree), l1tTauGenJetPairs);
+    float maxPt = 0;
+    bool save = false;
     for (auto l1tTauIterator = l1tTauCollectionHandle -> begin(0); l1tTauIterator != l1tTauCollectionHandle -> end(0); l1tTauIterator++ )
     {
       if (l1tTauIterator -> pt() > maxPt)
       {
+        save = true;
         maxPt = l1tTauIterator -> pt();
         this -> _l1tObjectParticle.id = (l1tTauIterator - l1tTauCollectionHandle->begin(0));
         this -> _l1tObjectParticle.pt = l1tTauIterator -> pt();
         this -> _l1tObjectParticle.eta = l1tTauIterator -> eta();
+        this -> _l1tObjectParticle.hwQual = l1tTauIterator -> hwQual();                        
         this -> _l1tObjectParticle.phi = l1tTauIterator -> phi();
       }
     }
-    if (l1tTauCollectionHandle -> begin(0) != l1tTauCollectionHandle -> end(0)) this -> _l1tLeadingTauTree -> Fill();
+    if (save) this -> _l1tLeadingTauTree -> Fill();
     
     for (auto l1tTauIterator = l1tTauCollectionHandle -> begin(0); l1tTauIterator != l1tTauCollectionHandle -> end(0); l1tTauIterator++ )
     {
       this -> _l1tObjectParticle.id = (l1tTauIterator - l1tTauCollectionHandle->begin(0));
       this -> _l1tObjectParticle.pt = l1tTauIterator -> pt();
       this -> _l1tObjectParticle.eta = l1tTauIterator -> eta();
+      this -> _l1tObjectParticle.hwQual = l1tTauIterator -> hwQual();                        
       this -> _l1tObjectParticle.phi = l1tTauIterator -> phi();
       this -> _l1tTauTree -> Fill();
     }
@@ -439,12 +477,12 @@ void
 MatchGenJetWithL1Objects::_fillTreeWithMatchedPairs
 (
   TTree & aTree,
-  const std::vector < std::tuple <Particle, Particle, float > > & matchedL1TObjectJetPairs
+  const std::vector < std::tuple <TriggerObject, Particle, float > > & matchedL1TObjectJetPairs
 )
 {
   for (const auto & matchTuple : matchedL1TObjectJetPairs)
   {
-    const Particle & l1tObject = std::get<0>(matchTuple);
+    const TriggerObject & l1tObject = std::get<0>(matchTuple);
     const Particle & genJet = std::get<1>(matchTuple);
     float deltaR2 = std::get<2>(matchTuple);
     this -> _genJetParticle.id = genJet.id;
@@ -455,6 +493,7 @@ MatchGenJetWithL1Objects::_fillTreeWithMatchedPairs
     this -> _l1tObjectParticle.pt = l1tObject.pt;
     this -> _l1tObjectParticle.eta = l1tObject.eta;
     this -> _l1tObjectParticle.phi = l1tObject.phi;
+    this -> _l1tObjectParticle.hwQual = l1tObject.hwQual;
     this -> _deltaR2 = deltaR2;
     aTree.Fill();
   }
@@ -464,7 +503,7 @@ MatchGenJetWithL1Objects::_fillTreeWithMatchedPairs
 //If more than 1 object is present the highest momentum one is considered and saved
 
 template <class T> // <3
-const std::vector <std::tuple < Particle, Particle, float > > 
+const std::vector <std::tuple < TriggerObject, Particle, float > > 
 MatchGenJetWithL1Objects::_matchGenJetWithL1Object
 (
   const edm::Handle < std::vector< reco::GenJet > > & genJetCollectionHandle,
@@ -472,14 +511,14 @@ MatchGenJetWithL1Objects::_matchGenJetWithL1Object
 )
 {
 
-  std::vector< std::tuple < Particle , Particle , float > > l1tObjectGenJetPairs;
+  std::vector< std::tuple < TriggerObject, Particle , float > > l1tObjectGenJetPairs;
   // for each object in the l1t collection we look for the closest jet in a wide range
   for (auto genJetIterator = genJetCollectionHandle -> begin(); genJetIterator != genJetCollectionHandle -> end(); genJetIterator++ )
   {
     
     bool foundMatch = false;
-    float dr2Min = 0.0625; // i.e. dr = 0.25, half of the jet size, 0.5
-    std::tuple<Particle, Particle, float > l1tObjectGenJetPair;
+    float dr2Min = 0.25; // i.e. dr = 0.5, half of the jet size, 0.5
+    std::tuple<TriggerObject, Particle, float > l1tObjectGenJetPair;
     
     Particle & matchedGenJet = std::get<1>(l1tObjectGenJetPair);
     matchedGenJet.id = (genJetIterator - genJetCollectionHandle -> begin());
@@ -497,11 +536,13 @@ MatchGenJetWithL1Objects::_matchGenJetWithL1Object
       
       if ((dr2 < dr2Min))
       {
-        Particle & matchedL1TObject = std::get<0>(l1tObjectGenJetPair);
+        TriggerObject & matchedL1TObject = std::get<0>(l1tObjectGenJetPair);
         matchedL1TObject.id = (bx0Iterator - l1tObjectCollectionHandle -> begin(0));
         matchedL1TObject.pt = bx0Iterator -> pt();
         matchedL1TObject.phi = bx0Iterator -> phi();
         matchedL1TObject.eta = bx0Iterator -> eta();
+        matchedL1TObject.hwQual = bx0Iterator -> hwQual();
+        
         std::get<2>(l1tObjectGenJetPair) = dr2;
         dr2Min = dr2;
         foundMatch = true;
