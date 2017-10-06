@@ -13,11 +13,11 @@ options.register ('source',
                   VarParsing.VarParsing.multiplicity.singleton, # singleton or list
                   VarParsing.VarParsing.varType.string,          # string, int, or float
                   "Source sample")
-options.outputFile = 'MatchL1TMuonWithGenLevelMuons.root'
+options.outputFile = 'MatchL1TMuonWithGenLevelMuons_SingleMu.root'
 options.source = "source"
 options.parseArguments()
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 if options.source:
   process.source = locals()[options.source]
