@@ -55,6 +55,12 @@ struct Particle {
   float pt, eta, phi;
 };
 
+struct TriggerObject {
+  unsigned int id;
+  float pt, eta, phi;
+  int hwQual;
+};
+
 class MatchL1TMuonWithGenLevelMuons : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   public:
     explicit MatchL1TMuonWithGenLevelMuons(const edm::ParameterSet&);
@@ -70,7 +76,7 @@ class MatchL1TMuonWithGenLevelMuons : public edm::one::EDAnalyzer<edm::one::Shar
 
     // Beautiful template function to perform matching between a gen jet and whatever L1T object
     template <class T> // <3
-    const std::vector < std::tuple < Particle, Particle, float > > 
+    const std::vector < std::tuple < TriggerObject, Particle, float > > 
     _matchL1TMuonWithGenLevelMuons
     (
       const edm::Handle< std::vector< reco::GenParticle > > &,
@@ -81,7 +87,7 @@ class MatchL1TMuonWithGenLevelMuons : public edm::one::EDAnalyzer<edm::one::Shar
     edm::EDGetTokenT< std::vector< reco::GenParticle > > *_genParticleCollectionTag;
     edm::EDGetTokenT< BXVector< l1t::Muon > > *_l1tMuonCollectionTag;
     Particle _genParticle;
-    Particle _l1tObjectParticle;
+    TriggerObject _l1tObjectParticle;
     float _deltaR2;
 
     TTree * _l1tMuonGenParticleTree;
@@ -121,6 +127,7 @@ MatchL1TMuonWithGenLevelMuons::MatchL1TMuonWithGenLevelMuons(const edm::Paramete
   this -> _l1tMuonGenParticleTree -> Branch("l1tMuon_pt", &(this -> _l1tObjectParticle.pt), "l1tMuon_pt/F");
   this -> _l1tMuonGenParticleTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectParticle.eta), "l1tMuon_eta/F");
   this -> _l1tMuonGenParticleTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectParticle.phi), "l1tMuon_phi/F");
+  this -> _l1tMuonGenParticleTree -> Branch("l1tMuon_qual", &(this -> _l1tObjectParticle.hwQual), "l1tMuon_qual/i");
   this -> _l1tMuonGenParticleTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
 
   //Used to detemine the prob that a jet will be misidentified binned in pt
@@ -142,7 +149,7 @@ MatchL1TMuonWithGenLevelMuons::~MatchL1TMuonWithGenLevelMuons()
 }
 
 template <class T> // <3
-const std::vector <std::tuple < Particle, Particle, float > > 
+const std::vector <std::tuple < TriggerObject, Particle, float > > 
 MatchL1TMuonWithGenLevelMuons::_matchL1TMuonWithGenLevelMuons
 (
   const edm::Handle < std::vector< reco::GenParticle > > & genParticleCollectionHandle,
@@ -151,7 +158,7 @@ MatchL1TMuonWithGenLevelMuons::_matchL1TMuonWithGenLevelMuons
 )
 {
 
-  std::vector< std::tuple < Particle , Particle , float > > l1tObjectGenParticlePairs;
+  std::vector< std::tuple < TriggerObject , Particle , float > > l1tObjectGenParticlePairs;
   // for each object in the l1t collection we look for the closest jet in a wide range
   for (
     typename BXVector<T>::const_iterator bx0Iterator = l1tMuonCollectionHandle -> begin(0);
@@ -159,22 +166,24 @@ MatchL1TMuonWithGenLevelMuons::_matchL1TMuonWithGenLevelMuons
     bx0Iterator++
   )
   {
-    std::cout << "Muon object" << std::endl;
+    std::cout << "Muon object w/ qual " << bx0Iterator -> hwQual() << std::endl;
+    
     bool foundMatch = false;
     float dr2Min = dr2Max; 
-    std::tuple<Particle, Particle, float > l1tObjectGenParticlePair;
-    Particle & matchedL1TObject = std::get<0>(l1tObjectGenParticlePair);
+    std::tuple<TriggerObject, Particle, float > l1tObjectGenParticlePair;
+    TriggerObject & matchedL1TObject = std::get<0>(l1tObjectGenParticlePair);
     matchedL1TObject.id = (bx0Iterator - l1tMuonCollectionHandle -> begin(0));
     matchedL1TObject.pt = bx0Iterator -> pt();
     matchedL1TObject.phi = bx0Iterator -> phi();
     matchedL1TObject.eta = bx0Iterator -> eta();
+    matchedL1TObject.hwQual = bx0Iterator -> hwQual();
     
     for (auto genParticleIterator = genParticleCollectionHandle -> begin(); genParticleIterator != genParticleCollectionHandle -> end(); genParticleIterator++ )
     {
       // Only the muonssss
-      float dr2 = reco::deltaR2(*bx0Iterator, *genParticleIterator);
-      std::cout << "Gen-Muon object at dr2 " << dr2 << "w/ pdgid " << genParticleIterator -> pdgId() << std::endl;
       if (abs(genParticleIterator -> pdgId()) != 13) continue;
+      float dr2 = reco::deltaR2(*bx0Iterator, *genParticleIterator);
+      //std::cout << "Gen-Muon object at dr2 " << dr2 << "w/ pdgid " << genParticleIterator -> pdgId() << std::endl;
       if (dr2 < dr2Min)
       {
         std::get<2>(l1tObjectGenParticlePair) = dr2;
@@ -189,8 +198,10 @@ MatchL1TMuonWithGenLevelMuons::_matchL1TMuonWithGenLevelMuons
     }
     
     //if we have found a compatible gen jet we push the object-jet pair in a vector which will be our result
-    if (foundMatch)
+    if (foundMatch) {
+      std::cout << "Matched a muon object w/ qual " << matchedL1TObject.hwQual << std::endl;
       l1tObjectGenParticlePairs.push_back(l1tObjectGenParticlePair);
+    }
   }
 
   return l1tObjectGenParticlePairs;
@@ -217,42 +228,48 @@ MatchL1TMuonWithGenLevelMuons::analyze(const edm::Event& iEvent, const edm::Even
 
   //Debug printout
 
-  for (const auto & matchTuple : l1tMuonGenMuonPairs) 
-  {
-    const Particle & l1tMuon = std::get<0>(matchTuple);
-    const Particle & genMuon = std::get<1>(matchTuple);
-    float deltaR2 = std::get<2>(matchTuple);
-    std::cout << "MATCHED MUON:" << std::endl;
-    std::cout << "Gen-level id: " << genMuon.id << "\t L1T-level id: " << l1tMuon.id << std::endl;
-    std::cout << "Gen-level pt: " << genMuon.pt << "\t L1T-level pt: " << l1tMuon.pt << std::endl;
-    std::cout << "Gen-level eta: " << genMuon.eta << "\t L1T-level eta: " << l1tMuon.eta << std::endl;
-    std::cout << "Gen-level phi: " << genMuon.phi << "\t L1T-level phi: " << l1tMuon.phi << std::endl;
-    std::cout << "deltaR2: " << deltaR2 << std::endl;
-  }
-
-  // Looking for the highest momentum muon
-
-  float ptMax = 0;
+  //for (const auto & matchTuple : l1tMuonGenMuonPairs) 
+  //{
+  //  const Particle & l1tMuon = std::get<0>(matchTuple);
+  //  const Particle & genMuon = std::get<1>(matchTuple);
+  //  float deltaR2 = std::get<2>(matchTuple);
+  //  std::cout << "MATCHED MUON:" << std::endl;
+  //  std::cout << "Gen-level id: " << genMuon.id << "\t L1T-level id: " << l1tMuon.id << std::endl;
+  //  std::cout << "Gen-level pt: " << genMuon.pt << "\t L1T-level pt: " << l1tMuon.pt << std::endl;
+  //  std::cout << "Gen-level eta: " << genMuon.eta << "\t L1T-level eta: " << l1tMuon.eta << std::endl;
+  //  std::cout << "Gen-level phi: " << genMuon.phi << "\t L1T-level phi: " << l1tMuon.phi << std::endl;
+  //  std::cout << "deltaR2: " << deltaR2 << std::endl;
+  //}
 
   for (const auto & matchTuple : l1tMuonGenMuonPairs)
   {
-    const Particle & l1tObject = std::get<0>(matchTuple);
+    const TriggerObject & l1tObject = std::get<0>(matchTuple);
     const Particle & genMuon = std::get<1>(matchTuple);
     float deltaR2 = std::get<2>(matchTuple);
-    if (l1tObject.pt > ptMax){
-      ptMax = l1tObject.pt;
-      this -> _genParticle.id = genMuon.id;
-      this -> _genParticle.pt = genMuon.pt;
-      this -> _genParticle.eta = genMuon.eta;
-      this -> _genParticle.phi = genMuon.phi;
-      this -> _l1tObjectParticle.id = l1tObject.id;
-      this -> _l1tObjectParticle.pt = l1tObject.pt;
-      this -> _l1tObjectParticle.eta = l1tObject.eta;
-      this -> _l1tObjectParticle.phi = l1tObject.phi;
-      this -> _deltaR2 = deltaR2;
-      this -> _l1tMuonGenParticleTree -> Fill();
-    }
+    this -> _genParticle.id = genMuon.id;
+    this -> _genParticle.pt = genMuon.pt;
+    this -> _genParticle.eta = genMuon.eta;
+    this -> _genParticle.phi = genMuon.phi;
+    this -> _l1tObjectParticle.id = l1tObject.id;
+    this -> _l1tObjectParticle.pt = l1tObject.pt;
+    this -> _l1tObjectParticle.eta = l1tObject.eta;
+    this -> _l1tObjectParticle.phi = l1tObject.phi;
+    this -> _l1tObjectParticle.hwQual = l1tObject.hwQual;
+    this -> _deltaR2 = deltaR2;
+    this -> _l1tMuonGenParticleTree -> Fill();
   }
+
+  for (auto genParticleIterator = genParticleCollectionHandle -> begin(); genParticleIterator != genParticleCollectionHandle -> end(); genParticleIterator++ )
+  {
+    // Only the muonssss
+    if (abs(genParticleIterator -> pdgId()) != 13) continue;
+    std::cout << "Gen-Muon object" << std::endl;
+    this -> _genParticle.id = (genParticleIterator - genParticleCollectionHandle -> begin());
+    this -> _genParticle.pt = genParticleIterator -> pt();
+    this -> _genParticle.phi = genParticleIterator -> phi();
+    this -> _genParticle.eta = genParticleIterator -> eta();
+    this -> _genParticleTree -> Fill();
+  }  
 
 }
 
