@@ -313,7 +313,6 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
   iEvent.getByToken(*(this -> _genJetCollectionTag), genJetCollectionHandle);
 
   // I want to save for each event the highest momentum l1t(Muon/EGamma/Tau/Jet) for performance purposes
-
   
   if (this -> _l1tMuonCollectionTag)
   {
@@ -338,7 +337,7 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
       }
     }
     if (save) {
-      std::cout << "I am saving a muon object w/ qual " << this -> _l1tObjectParticle.hwQual << std::endl;      
+      //std::cout << "I am saving a muon object w/ qual " << this -> _l1tObjectParticle.hwQual << std::endl;      
       this -> _l1tLeadingMuonTree -> Fill();
     }
     
@@ -364,7 +363,7 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     bool save = false;
     for (auto l1tJetIterator = l1tJetCollectionHandle -> begin(0); l1tJetIterator != l1tJetCollectionHandle -> end(0); l1tJetIterator++ )
     {
-      if (l1tJetIterator -> pt() > maxPt)
+      if ((l1tJetIterator->pt() > maxPt) && (l1tJetIterator->eta() < 1.44) && (l1tJetIterator->eta() > -1.44))
       {
         save = true;        
         maxPt = l1tJetIterator -> pt();
@@ -465,6 +464,7 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
   {
     this -> _genJetParticle.id = (genJetIterator - genJetCollectionHandle->begin());
     this -> _genJetParticle.pt = genJetIterator -> pt();
+    //std::cout << "Jet pt " << genJetIterator -> pt() << std::endl;
     this -> _genJetParticle.eta = genJetIterator -> eta();
     this -> _genJetParticle.phi = genJetIterator -> phi();
     this -> _genJetTree -> Fill();
