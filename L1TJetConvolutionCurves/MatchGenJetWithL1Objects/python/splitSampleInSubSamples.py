@@ -1,4 +1,5 @@
-from L1TJetConvolutionCurves.MatchGenJetWithL1Objects.MySamples_cfg import *
+#from L1TJetConvolutionCurves.MatchGenJetWithL1Objects.MySamples_cfg import *
+from importlib import import_module
 
 def splitInBlocks (l, n):
   """split the list l in n blocks of equal size"""
@@ -26,10 +27,13 @@ parser.add_argument('--numberOfBlocks',
     type=int, dest="numberOfBlocks")
 parser.add_argument('--sample',
     dest="sample")
+parser.add_argument('--sampleModule',
+    dest="sampleModule",
+    default="MySamples_cfg")
 
 args = parser.parse_args()
 
-sample = locals()[args.sample]
+sample = getattr(import_module("L1TJetConvolutionCurves.MatchGenJetWithL1Objects." + args.sampleModule), args.sample)
 
 blocks = splitInBlocks(sample.fileNames, args.numberOfBlocks)
 
