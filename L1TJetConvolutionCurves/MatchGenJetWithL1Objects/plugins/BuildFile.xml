@@ -3,6 +3,7 @@
 <use name="FWCore/ParameterSet"/>
 <use name="DataFormats/JetReco"/>
 <use name="DataFormats/L1Trigger"/>
+<use name="DataFormats/L1TCalorimeter"/>
 <use name="DataFormats/Math"/>
 <use name="PhysicsTools/UtilAlgos"/>
 <use name="FWCore/ServiceRegistry"/>
