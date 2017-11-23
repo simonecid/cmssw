@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 import FWCore.ParameterSet.VarParsing as VarParsing
-from L1TJetConvolutionCurves.MatchL1TMuonWithGenLevelMuons.source_QCD_Pt_15_3000_splitted import *
+from importlib import import_module
 
 process = cms.Process("MatchL1TMuonWithGenLevelMuons")
 
@@ -13,14 +13,20 @@ options.register ('source',
                   VarParsing.VarParsing.multiplicity.singleton, # singleton or list
                   VarParsing.VarParsing.varType.string,          # string, int, or float
                   "Source sample")
-options.outputFile = 'MatchL1TMuonWithGenLevelMuons.root'
+options.register ('sourceFile',
+                  "", # default value
+                  VarParsing.VarParsing.multiplicity.singleton, # singleton or list
+                  VarParsing.VarParsing.varType.string,          # string, int, or float
+                  "File containing the splitted sources")
+options.outputFile = 'MatchL1TMuonWithGenLevelMuons_GluGlu_HToMuMu.root'
 options.source = "source_0"
+options.sourceFile = "source_SingleNeutrinoPU140_splitted"
+
 options.parseArguments()
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
-if options.source:
-  process.source = locals()[options.source]
+process.source = getattr(import_module("L1TJetConvolutionCurves.MatchGenJetWithL1Objects." + options.sourceFile), options.source)
 
 process.TFileService = cms.Service('TFileService', fileName = cms.string(options.outputFile))
 
