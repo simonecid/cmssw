@@ -2,7 +2,7 @@
 
 #set -o xtrace
 
-while getopts "j:c:p:i:d:s:" o; do
+while getopts "j:c:p:i:d:s:b:" o; do
   case "${o}" in
     j)
       jobName=${OPTARG}
@@ -22,6 +22,8 @@ while getopts "j:c:p:i:d:s:" o; do
     s)
       SAMPLE_FILE=${OPTARG}
       ;;
+    b)
+      BRANCH=${OPTARG}
     esac
 done
 
@@ -37,6 +39,7 @@ set -o xtrace
 cp -r /software/sb17498/CMSSW_9_0_0 .
 cd CMSSW_9_0_0/src
 cmsenv
+git checkout ${BRANCH}
 scramv1 b ProjectRename
 scram b
 cmsenv
