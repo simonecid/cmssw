@@ -36,11 +36,10 @@ OUTPUT_FILENAME=${jobName}_${clusterId}.${processId}.root
 source /cvmfs/cms.cern.ch/cmsset_default.sh
 
 set -o xtrace
-cp -r /software/sb17498/CMSSW_9_0_0 .
+cmsrel CMSSW_9_0_0
 cd CMSSW_9_0_0/src
 cmsenv
-git checkout ${BRANCH}
-scramv1 b ProjectRename
+git cms-merge-topic simonecid:${BRANCH}
 scram b
 cmsenv
 
