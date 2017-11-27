@@ -39,6 +39,7 @@ process.out = cms.OutputModule("PoolOutputModule",
 )
 
 process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
+  genParticleCollectionTag = cms.InputTag("genParticles"),
   genJetCollectionTag = cms.InputTag("ak4GenJets"),
   l1tJetCollectionTag = cms.InputTag("simCaloStage2Digis"),
   l1tCaloTowerCollectionTag = cms.InputTag("simCaloStage2Digis", "MP"),
