@@ -7,5 +7,6 @@
 <use name="DataFormats/Math"/>
 <use name="PhysicsTools/UtilAlgos"/>
 <use name="FWCore/ServiceRegistry"/>
+<use name="DataFormats/HepMCCandidate"/>
 
 <flags EDM_PLUGIN="1"/>
