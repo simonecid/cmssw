@@ -359,53 +359,59 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
   edm::Handle < std::vector< reco::GenParticle > > genParticleCollectionHandle;
   iEvent.getByToken(*(this -> _genParticleCollectionTag), genParticleCollectionHandle);
 
-  // Muon veto. Return if there is a gen muon around.
+  // Muon veto. For muon matching
+
+  bool hasMuons = false;
 
   for (auto genParticleIterator = genParticleCollectionHandle -> begin(); genParticleIterator != genParticleCollectionHandle -> end(); genParticleIterator++ )
   {
     if (abs(genParticleIterator->pdgId()) == 13)
-      return;
+      hasMuons = true;
   }
 
   // I want to save for each event the highest momentum l1t(Muon/EGamma/Tau/Jet) for performance purposes
   
-  if (this -> _l1tMuonCollectionTag)
+  //muon veto
+  if (!hasMuons)
   {
-    edm::Handle < BXVector< l1t::Muon > > l1tMuonCollectionHandle;
-    iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
-    auto l1tMuonGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle);
-    this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
-    float maxPt = 0;
-    bool save = false;
-    for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
+    if (this -> _l1tMuonCollectionTag)
     {
-      if (l1tMuonIterator -> hwQual() < 8) continue;
-      if (l1tMuonIterator -> pt() > maxPt)
+      edm::Handle < BXVector< l1t::Muon > > l1tMuonCollectionHandle;
+      iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
+      auto l1tMuonGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle);
+      this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
+      float maxPt = 0;
+      bool save = false;
+      for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
       {
-        save = true;
-        maxPt = l1tMuonIterator -> pt();
-        this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
+        if (l1tMuonIterator -> hwQual() < 8) continue;
+        if (l1tMuonIterator -> pt() > maxPt)
+        {
+          save = true;
+          maxPt = l1tMuonIterator -> pt();
+          this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
+          this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
+          this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
+          this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
+          this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
+        }
+      }
+      if (save) {
+        //std::cout << "I am saving a muon object w/ qual " << this -> _l1tObjectParticle.hwQual << std::endl;      
+        this -> _l1tLeadingMuonTree -> Fill();
+      }
+      
+      for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
+      {
         this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
         this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
         this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
         this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
+        this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
+        this -> _l1tMuonTree -> Fill();
       }
+      
     }
-    if (save) {
-      //std::cout << "I am saving a muon object w/ qual " << this -> _l1tObjectParticle.hwQual << std::endl;      
-      this -> _l1tLeadingMuonTree -> Fill();
-    }
-    
-    for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
-    {
-      this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
-      this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
-      this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
-      this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
-      this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
-      this -> _l1tMuonTree -> Fill();
-    }
-    
   }
   
   if (this -> _l1tJetCollectionTag)
@@ -418,6 +424,7 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     bool save = false;
     for (auto l1tJetIterator = l1tJetCollectionHandle -> begin(0); l1tJetIterator != l1tJetCollectionHandle -> end(0); l1tJetIterator++ )
     {
+      // Only barrel leading l1t jets
       if ((l1tJetIterator->pt() > maxPt) && (l1tJetIterator->eta() < 1.44) && (l1tJetIterator->eta() > -1.44))
       {
         save = true;        
