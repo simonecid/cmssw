@@ -39,6 +39,8 @@
 #include "DataFormats/L1Trigger/interface/Tau.h"
 #include "DataFormats/L1TCalorimeter/interface/CaloTower.h"
 
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
@@ -90,7 +92,8 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
       TTree &,
       const std::vector < std::tuple < TriggerObject, Particle, float > > &
     );
-  
+
+    edm::EDGetTokenT<std::vector<reco::GenParticle>> *_genParticleCollectionTag;
     edm::EDGetTokenT< std::vector< reco::GenJet > > *_genJetCollectionTag;
     edm::EDGetTokenT< BXVector< l1t::Muon > > *_l1tMuonCollectionTag;
     edm::EDGetTokenT< BXVector< l1t::Jet > > *_l1tJetCollectionTag;
@@ -274,6 +277,7 @@ void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
 {
   
   this -> _genJetCollectionTag = new edm::EDGetTokenT< std::vector< reco::GenJet > >(consumes< std::vector< reco::GenJet > > (iConfig.getParameter< edm::InputTag >("genJetCollectionTag")));
+  this -> _genParticleCollectionTag = new edm::EDGetTokenT< std::vector< reco::GenParticle > >(consumes< std::vector< reco::GenParticle > > (iConfig.getParameter< edm::InputTag >("genParticleCollectionTag")));
   // Taking the tag of the various L1T object collections
   // If a parameter is omitted that object will not be studied
   try
@@ -327,6 +331,7 @@ void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
 void MatchGenJetWithL1Objects::_freeTokens()
 {
   if (this -> _genJetCollectionTag) delete this -> _genJetCollectionTag;
+  if (this -> _genParticleCollectionTag) delete this -> _genParticleCollectionTag;
   if (this -> _l1tCaloTowerCollectionTag) delete this -> _l1tCaloTowerCollectionTag;
   if (this -> _l1tMuonCollectionTag) delete this -> _l1tMuonCollectionTag;
   if (this -> _l1tJetCollectionTag) delete this -> _l1tJetCollectionTag;
@@ -351,6 +356,16 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
   //Retrieving gen and l1t stuff
   edm::Handle < std::vector< reco::GenJet > > genJetCollectionHandle;
   iEvent.getByToken(*(this -> _genJetCollectionTag), genJetCollectionHandle);
+  edm::Handle < std::vector< reco::GenParticle > > genParticleCollectionHandle;
+  iEvent.getByToken(*(this -> _genParticleCollectionTag), genParticleCollectionHandle);
+
+  // Muon veto. Return if there is a gen muon around.
+
+  for (auto genParticleIterator = genParticleCollectionHandle -> begin(); genParticleIterator != genParticleCollectionHandle -> end(); genParticleIterator++ )
+  {
+    if (abs(genParticleIterator->pdgId()) == 13)
+      return;
+  }
 
   // I want to save for each event the highest momentum l1t(Muon/EGamma/Tau/Jet) for performance purposes
   
