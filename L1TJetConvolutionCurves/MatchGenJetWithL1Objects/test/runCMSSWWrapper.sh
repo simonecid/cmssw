@@ -2,6 +2,8 @@
 
 #set -o xtrace
 
+export HOME=/users/sb17498
+
 while getopts "j:c:p:i:d:s:b:" o; do
   case "${o}" in
     j)
@@ -27,6 +29,8 @@ while getopts "j:c:p:i:d:s:b:" o; do
     esac
 done
 
+export SCRAM_ARCH=slc6_amd64_gcc530
+
 echo "I am running on" $HOSTNAME
 
 echo "Running CMSSW job"
@@ -41,7 +45,6 @@ cd CMSSW_9_0_0/src
 cmsenv
 git cms-merge-topic simonecid:${BRANCH}
 scram b
-cmsenv
 
 cmsRun ${inputFile} source=source_${processId} outputFile=${OUTPUT_FILENAME} sourceFile=${SAMPLE_FILE}
 
