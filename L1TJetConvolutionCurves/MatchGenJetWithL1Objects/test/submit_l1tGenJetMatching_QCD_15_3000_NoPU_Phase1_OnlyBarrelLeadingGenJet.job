@@ -1,0 +1,18 @@
+Universe = vanilla
+job = l1tGenJetMatching_QCD_15_3000_NoPU_Phase1_OnlyBarrelLeadingGenJet
+cmd = L1TJetConvolutionCurves/MatchGenJetWithL1Objects/test/runCMSSWWrapper.sh
+args= -j $(job) -c $(cluster) -p $(process) -i L1TJetConvolutionCurves/MatchGenJetWithL1Objects/python/RunLeadingGenJetMatch_cfg.py -d l1tGenJetMatching_QCD_15_3000_NoPU_Phase1_ClosestDRMatch_MuonVeto_BarrelLeadingL1TJetOnly_OnlyBarrelLeadingGenJet -s source_QCD_Pt_15_3000_splitted -b convolutionCurves_BarrelLeadingL1TJetOnly_MuonVeto
+# Better not to put logs in the same folder, as they are plenty
+output = /storage/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).out
+error = /storage/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).err
+log = /storage/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).log
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT_OR_EVICT
+use_x509userproxy = true
+
+requirements= Machine=!="hd-38-02.dice.priv"
+request_cpus = 1
+request_memory = 1000
+request_disk = 1000000
+
+queue 20
