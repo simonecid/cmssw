@@ -19,7 +19,7 @@
 
 // system include files
 #include <memory>
-#include <signal.h>
+#include <csignal>
 
 // user include files
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
