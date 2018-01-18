@@ -1,9 +1,9 @@
 import FWCore.ParameterSet.Config as cms
 import FWCore.ParameterSet.VarParsing as VarParsing
 from importlib import import_module
-#from L1TJetConvolutionCurves.MatchGenJetWithL1Objects.source_SingleNeutrinoPU140_splitted import *
+#from L1TJetConvolutionCurves.MatchLeadingGenJetWithL1Objects.source_SingleNeutrinoPU140_splitted import *
 
-process = cms.Process("MatchGenJetWithL1Objects")
+process = cms.Process("MatchLeadingGenJetWithL1Objects")
 #process = cms.Process("SaveEvent")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
@@ -38,7 +38,7 @@ process.out = cms.OutputModule("PoolOutputModule",
     )
 )
 
-process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
+process.MatchLeadingGenJetWithL1Objects = cms.EDAnalyzer('MatchLeadingGenJetWithL1Objects',
   genParticleCollectionTag = cms.InputTag("genParticles"),
   genJetCollectionTag = cms.InputTag("ak4GenJets"),
   l1tJetCollectionTag = cms.InputTag("simCaloStage2Digis"),
@@ -54,6 +54,6 @@ process.SaveEvent = cms.EDProducer('SaveEvent'
 process.EventNumberFilter = cms.EDFilter('EventNumberFilter'
 )
 
-process.p = cms.Path(process.MatchGenJetWithL1Objects)
+process.p = cms.Path(process.MatchLeadingGenJetWithL1Objects)
 
 #process.e = cms.EndPath(process.out)

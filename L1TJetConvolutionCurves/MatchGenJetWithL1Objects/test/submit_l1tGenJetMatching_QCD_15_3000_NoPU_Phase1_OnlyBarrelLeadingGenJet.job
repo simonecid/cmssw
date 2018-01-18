@@ -1,7 +1,7 @@
 Universe = vanilla
-job = l1tGenJetMatching_QCD_15_3000_PU140_Phase1
+job = l1tGenJetMatching_QCD_15_3000_NoPU_Phase1_OnlyBarrelLeadingGenJet
 cmd = L1TJetConvolutionCurves/MatchGenJetWithL1Objects/test/runCMSSWWrapper.sh
-args= -j $(job) -c $(cluster) -p $(process) -i L1TJetConvolutionCurves/MatchGenJetWithL1Objects/python/ConfFile_cfg.py -d l1tGenJetMatching_QCD_15_3000_PU140_Phase1_ClosestDRMatch_MuonVeto_BarrelLeadingL1TJetOnly -s source_QCD_Pt_15_3000_PU140_splitted -b convolutionCurves_BarrelLeadingL1TJetOnly_MuonVeto
+args= -j $(job) -c $(cluster) -p $(process) -i L1TJetConvolutionCurves/MatchGenJetWithL1Objects/python/RunLeadingGenJetMatch_cfg.py -d l1tGenJetMatching_QCD_15_3000_NoPU_Phase1_ClosestDRMatch_MuonVeto_BarrelLeadingL1TJetOnly_OnlyBarrelLeadingGenJet -s source_QCD_Pt_15_3000_splitted -b convolutionCurves_BarrelLeadingL1TJetOnly_MuonVeto
 # Better not to put logs in the same folder, as they are plenty
 output = /storage/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).out
 error = /storage/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).err

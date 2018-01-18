@@ -19,6 +19,7 @@
 
 // system include files
 #include <memory>
+#include <signal.h>
 
 // user include files
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
@@ -38,6 +39,8 @@
 #include "DataFormats/L1Trigger/interface/EGamma.h"
 #include "DataFormats/L1Trigger/interface/Tau.h"
 #include "DataFormats/L1TCalorimeter/interface/CaloTower.h"
+
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
@@ -77,20 +80,21 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
 
     // Beautiful template function to perform matching between a gen jet and whatever L1T object
     template <class T> // <3
-    const std::vector < std::tuple < TriggerObject, Particle, float > > 
-    _matchGenJetWithL1Object
-    (
-      const edm::Handle< std::vector< reco::GenJet > > &,
-      const edm::Handle < BXVector < T > > & 
+    const std::vector< std::tuple < TriggerObject, Particle, float> >
+    _matchGenJetWithL1Object(
+      const edm::Handle<std::vector<reco::GenJet>> &,
+      const edm::Handle<BXVector<T>> &,
+      float = 0.25
     );
-    
+
     void
     _fillTreeWithMatchedPairs
     (
       TTree &,
       const std::vector < std::tuple < TriggerObject, Particle, float > > &
     );
-  
+
+    edm::EDGetTokenT<std::vector<reco::GenParticle>> *_genParticleCollectionTag;
     edm::EDGetTokenT< std::vector< reco::GenJet > > *_genJetCollectionTag;
     edm::EDGetTokenT< BXVector< l1t::Muon > > *_l1tMuonCollectionTag;
     edm::EDGetTokenT< BXVector< l1t::Jet > > *_l1tJetCollectionTag;
@@ -278,6 +282,15 @@ void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
   // If a parameter is omitted that object will not be studied
   try
   {
+    this -> _genParticleCollectionTag = new edm::EDGetTokenT< std::vector< reco::GenParticle > >(consumes< std::vector< reco::GenParticle > > (iConfig.getParameter< edm::InputTag >("genParticleCollectionTag")));
+  } catch (std::exception const & ex) 
+  {
+    std::cerr << ">>> genParticleCollectionTag not found." << std::endl;
+    this -> _genParticleCollectionTag = NULL;
+  }
+
+  try
+  {
     this -> _l1tMuonCollectionTag = new edm::EDGetTokenT< BXVector < l1t::Muon > >(consumes< BXVector< l1t::Muon > > (iConfig.getParameter< edm::InputTag >("l1tMuonCollectionTag")));
   } catch (std::exception const & ex) 
   {
@@ -327,6 +340,7 @@ void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
 void MatchGenJetWithL1Objects::_freeTokens()
 {
   if (this -> _genJetCollectionTag) delete this -> _genJetCollectionTag;
+  if (this -> _genParticleCollectionTag) delete this -> _genParticleCollectionTag;
   if (this -> _l1tCaloTowerCollectionTag) delete this -> _l1tCaloTowerCollectionTag;
   if (this -> _l1tMuonCollectionTag) delete this -> _l1tMuonCollectionTag;
   if (this -> _l1tJetCollectionTag) delete this -> _l1tJetCollectionTag;
@@ -356,41 +370,54 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
   
   if (this -> _l1tMuonCollectionTag)
   {
-    edm::Handle < BXVector< l1t::Muon > > l1tMuonCollectionHandle;
-    iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
-    auto l1tMuonGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle);
-    this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
-    float maxPt = 0;
-    bool save = false;
-    for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
+    // Muon veto. For muon matching
+    edm::Handle < std::vector< reco::GenParticle > > genParticleCollectionHandle;
+    iEvent.getByToken(*(this -> _genParticleCollectionTag), genParticleCollectionHandle);
+    bool hasMuons = false;
+    for (auto genParticleIterator = genParticleCollectionHandle -> begin(); genParticleIterator != genParticleCollectionHandle -> end(); genParticleIterator++ )
     {
-      if (l1tMuonIterator -> hwQual() < 8) continue;
-      if (l1tMuonIterator -> pt() > maxPt)
+      if (abs(genParticleIterator->pdgId()) == 13)
+        hasMuons = true;
+    }
+
+    if (!hasMuons)
+    {
+      edm::Handle < BXVector< l1t::Muon > > l1tMuonCollectionHandle;
+      iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
+      auto l1tMuonGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle);
+      this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
+      float maxPt = 0;
+      bool save = false;
+      for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
       {
-        save = true;
-        maxPt = l1tMuonIterator -> pt();
-        this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
+        if (l1tMuonIterator -> hwQual() < 8) continue;
+        if (l1tMuonIterator -> pt() > maxPt)
+        {
+          save = true;
+          maxPt = l1tMuonIterator -> pt();
+          this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
+          this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
+          this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
+          this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
+          this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
+        }
+      }
+      if (save) {
+        //std::cout << "I am saving a muon object w/ qual " << this -> _l1tObjectParticle.hwQual << std::endl;      
+        this -> _l1tLeadingMuonTree -> Fill();
+      }
+      
+      for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
+      {
         this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
         this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
         this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
         this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
+        this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
+        this -> _l1tMuonTree -> Fill();
       }
+      
     }
-    if (save) {
-      //std::cout << "I am saving a muon object w/ qual " << this -> _l1tObjectParticle.hwQual << std::endl;      
-      this -> _l1tLeadingMuonTree -> Fill();
-    }
-    
-    for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
-    {
-      this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
-      this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
-      this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
-      this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
-      this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
-      this -> _l1tMuonTree -> Fill();
-    }
-    
   }
   
   if (this -> _l1tJetCollectionTag)
@@ -403,6 +430,7 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     bool save = false;
     for (auto l1tJetIterator = l1tJetCollectionHandle -> begin(0); l1tJetIterator != l1tJetCollectionHandle -> end(0); l1tJetIterator++ )
     {
+      // Only barrel leading l1t jets
       if ((l1tJetIterator->pt() > maxPt) && (l1tJetIterator->eta() < 1.44) && (l1tJetIterator->eta() > -1.44))
       {
         save = true;        
@@ -462,41 +490,6 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     }
   }
 
-  if (this -> _l1tEGammaCollectionTag)
-  {
-    edm::Handle < BXVector< l1t::EGamma > > l1tEGammaCollectionHandle;
-    iEvent.getByToken(*(this -> _l1tEGammaCollectionTag), l1tEGammaCollectionHandle);
-    auto l1tEGammaGenJetPairs = this -> _matchGenJetWithL1Object<>(genJetCollectionHandle, l1tEGammaCollectionHandle);
-    this -> _fillTreeWithMatchedPairs(*(this -> _l1tEGammaGenJetTree), l1tEGammaGenJetPairs);
-    float maxPt = 0;
-    bool save = false;
-    for (auto l1tEGammaIterator = l1tEGammaCollectionHandle -> begin(0); l1tEGammaIterator != l1tEGammaCollectionHandle -> end(0); l1tEGammaIterator++ )
-    {
-      if (l1tEGammaIterator -> pt() > maxPt)
-      {
-        save = true;
-        maxPt = l1tEGammaIterator -> pt();
-        this -> _l1tObjectParticle.hwQual = l1tEGammaIterator -> hwQual();        
-        this -> _l1tObjectParticle.id = (l1tEGammaIterator - l1tEGammaCollectionHandle->begin(0));
-        this -> _l1tObjectParticle.pt = l1tEGammaIterator -> pt();
-        this -> _l1tObjectParticle.eta = l1tEGammaIterator -> eta();
-        this -> _l1tObjectParticle.phi = l1tEGammaIterator -> phi();
-      }
-    }
-    if (save) this -> _l1tLeadingEGammaTree -> Fill();
-    
-    for (auto l1tEGammaIterator = l1tEGammaCollectionHandle -> begin(0); l1tEGammaIterator != l1tEGammaCollectionHandle -> end(0); l1tEGammaIterator++ )
-    {
-      this -> _l1tObjectParticle.id = (l1tEGammaIterator - l1tEGammaCollectionHandle->begin(0));
-      this -> _l1tObjectParticle.pt = l1tEGammaIterator -> pt();
-      this -> _l1tObjectParticle.eta = l1tEGammaIterator -> eta();
-      this -> _l1tObjectParticle.phi = l1tEGammaIterator -> phi();
-      this -> _l1tObjectParticle.hwQual = l1tEGammaIterator -> hwQual();                  
-      this -> _l1tEGammaTree -> Fill();
-    }
-    
-  }
-  
   if (this -> _l1tEGammaCollectionTag)
   {
     edm::Handle < BXVector< l1t::EGamma > > l1tEGammaCollectionHandle;
@@ -615,17 +608,16 @@ const std::vector <std::tuple < TriggerObject, Particle, float > >
 MatchGenJetWithL1Objects::_matchGenJetWithL1Object
 (
   const edm::Handle < std::vector< reco::GenJet > > & genJetCollectionHandle,
-  const edm::Handle < BXVector < T > > & l1tObjectCollectionHandle 
+  const edm::Handle < BXVector < T > > & l1tObjectCollectionHandle,
+  float dr2Min
 )
 {
 
   std::vector< std::tuple < TriggerObject, Particle , float > > l1tObjectGenJetPairs;
   // for each object in the genJet collection we look for the closest l1tobject in a wide range
   for (auto genJetIterator = genJetCollectionHandle -> begin(); genJetIterator != genJetCollectionHandle -> end(); genJetIterator++ )
-  {
-    
+  {    
     bool foundMatch = false;
-    float dr2Min = 0.25; // i.e. dr = 0.5, half of the jet size, 0.5
     std::tuple<TriggerObject, Particle, float > l1tObjectGenJetPair;
     
     Particle & matchedGenJet = std::get<1>(l1tObjectGenJetPair);
@@ -635,28 +627,28 @@ MatchGenJetWithL1Objects::_matchGenJetWithL1Object
     matchedGenJet.eta = genJetIterator -> eta();
 
     for (
-      typename BXVector<T>::const_iterator bx0Iterator = l1tObjectCollectionHandle -> begin(0);
-      bx0Iterator != l1tObjectCollectionHandle -> end(0);
-      bx0Iterator++
+          typename BXVector<T>::const_iterator bx0Iterator = l1tObjectCollectionHandle->begin(0);
+          bx0Iterator != l1tObjectCollectionHandle->end(0);
+          bx0Iterator++
     )
     {
       float dr2 = reco::deltaR2(*bx0Iterator, *genJetIterator);
-      
+
       if ((dr2 < dr2Min))
       {
-        TriggerObject & matchedL1TObject = std::get<0>(l1tObjectGenJetPair);
-        matchedL1TObject.id = (bx0Iterator - l1tObjectCollectionHandle -> begin(0));
-        matchedL1TObject.pt = bx0Iterator -> pt();
-        matchedL1TObject.phi = bx0Iterator -> phi();
-        matchedL1TObject.eta = bx0Iterator -> eta();
-        matchedL1TObject.hwQual = bx0Iterator -> hwQual();
-        
+        TriggerObject &matchedL1TObject = std::get<0>(l1tObjectGenJetPair);
+        matchedL1TObject.id = (bx0Iterator - l1tObjectCollectionHandle->begin(0));
+        matchedL1TObject.pt = bx0Iterator->pt();
+        matchedL1TObject.phi = bx0Iterator->phi();
+        matchedL1TObject.eta = bx0Iterator->eta();
+        matchedL1TObject.hwQual = bx0Iterator->hwQual();
+
         std::get<2>(l1tObjectGenJetPair) = dr2;
         dr2Min = dr2;
         foundMatch = true;
       }
-    }
     
+    } 
     //if we have found a compatible l1t object we push the object-jet pair in a vector which will be our result
     if (foundMatch)
       l1tObjectGenJetPairs.push_back(l1tObjectGenJetPair);
