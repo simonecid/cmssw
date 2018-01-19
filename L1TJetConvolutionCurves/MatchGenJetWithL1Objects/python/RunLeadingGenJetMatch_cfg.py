@@ -22,10 +22,10 @@ options.register ('sourceFile',
                   VarParsing.VarParsing.multiplicity.singleton, # singleton or list
                   VarParsing.VarParsing.varType.string,          # string, int, or float
                   "File containing the splitted sources")
-options.sourceFile = "source_SingleNeutrinoPU140_splitted"
+options.sourceFile = "source_QCD_Pt_15_3000_splitted"
 options.parseArguments()
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5000) )
 
 process.source = getattr(import_module("L1TJetConvolutionCurves.MatchGenJetWithL1Objects." + options.sourceFile), options.source)
 
@@ -42,10 +42,10 @@ process.MatchLeadingGenJetWithL1Objects = cms.EDAnalyzer('MatchLeadingGenJetWith
   genParticleCollectionTag = cms.InputTag("genParticles"),
   genJetCollectionTag = cms.InputTag("ak4GenJets"),
   l1tJetCollectionTag = cms.InputTag("simCaloStage2Digis"),
-  l1tCaloTowerCollectionTag = cms.InputTag("simCaloStage2Digis", "MP"),
-  l1tMuonCollectionTag = cms.InputTag("simGmtStage2Digis"),
-  l1tTauCollectionTag = cms.InputTag("simCaloStage2Digis"),
-  l1tEGammaCollectionTag = cms.InputTag("simCaloStage2Digis"),
+  #l1tCaloTowerCollectionTag = cms.InputTag("simCaloStage2Digis", "MP"),
+  #l1tMuonCollectionTag = cms.InputTag("simGmtStage2Digis"),
+  #l1tTauCollectionTag = cms.InputTag("simCaloStage2Digis"),
+  #l1tEGammaCollectionTag = cms.InputTag("simCaloStage2Digis"),
 )
 
 process.SaveEvent = cms.EDProducer('SaveEvent'
