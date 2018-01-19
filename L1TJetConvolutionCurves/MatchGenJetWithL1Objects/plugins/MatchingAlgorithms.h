@@ -84,11 +84,6 @@ MatchingAlgorithms::matchParticleWithL1Object(
     // if asked check the cross match if we have found a one-direction match
     if (foundPreliminaryMatch)
     {
-      std::cout << "################## " << std::endl;
-      std::cout << "Preliminary match: " << std::endl;
-      std::cout << "Gen jet pt : " << particle.pt() << std::endl;
-      std::cout << "l1tJet pt : " << bestMatch -> pt() << std::endl;
-      std::cout << "deltaR2 : " << currentDR2Best << std::endl;
       if (performCrossCheck)
       // performing the cross check
       {
@@ -105,7 +100,6 @@ MatchingAlgorithms::matchParticleWithL1Object(
         if (std::get<1>(l1tObjectGenJetPair2) == &particle)
         {
           foundMatch = true;
-          std::cout << "Preliminary match's cross-check at quality " << matchQuality << " was successful." << std::endl;
         }
         // if not we want to check if there is a secondary particle
         else
@@ -113,7 +107,6 @@ MatchingAlgorithms::matchParticleWithL1Object(
           foundMatch = false;
           currentDR2Min = currentDR2Best;
           currentDR2Best = dr2Max;
-          std::cout << "Preliminary match's cross-check at quality " << matchQuality << " failed, trying again." << std::endl;
           matchQuality++;
           std::get<0>(l1tObjectGenJetPair) = NULL;
         }

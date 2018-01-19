@@ -132,10 +132,10 @@ MatchLeadingGenJetWithL1Objects::MatchLeadingGenJetWithL1Objects(const edm::Para
   this -> _l1tTauLeadingGenJetTree = fs -> make<TTree>("matchedLeadingGenJetL1TTauTree", "TTree with generator-level jet / L1T Tau information");
   this -> _leadingGenJetTree = fs -> make<TTree>("leadingGenJetTree", "TTree with generator-level jet information");
 
-  this -> _l1tMuonLeadingGenJetTree -> Branch("leadingGenJet_id", &(this -> _genJetParticle.id), "leadingGenJet_id/i");
-  this -> _l1tMuonLeadingGenJetTree -> Branch("leadingGenJet_pt", &(this -> _genJetParticle.pt), "leadingGenJet_pt/F");
-  this -> _l1tMuonLeadingGenJetTree -> Branch("leadingGenJet_eta", &(this -> _genJetParticle.eta), "leadingGenJet_eta/F");
-  this -> _l1tMuonLeadingGenJetTree -> Branch("leadingGenJet_phi", &(this -> _genJetParticle.phi), "leadingGenJet_phi/F");
+  this -> _l1tMuonLeadingGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
+  this -> _l1tMuonLeadingGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
+  this -> _l1tMuonLeadingGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
+  this -> _l1tMuonLeadingGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
   this -> _l1tMuonLeadingGenJetTree -> Branch("l1tMuon_id", &(this -> _l1tObjectParticle.id), "l1tMuon_id/i");
   this -> _l1tMuonLeadingGenJetTree -> Branch("l1tMuon_pt", &(this -> _l1tObjectParticle.pt), "l1tMuon_pt/F");
   this -> _l1tMuonLeadingGenJetTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectParticle.eta), "l1tMuon_eta/F");
@@ -144,10 +144,10 @@ MatchLeadingGenJetWithL1Objects::MatchLeadingGenJetWithL1Objects(const edm::Para
   this -> _l1tMuonLeadingGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
   this -> _l1tMuonLeadingGenJetTree -> Branch("matchingQuality", &(this -> _matchingQuality), "matchingQuality/F");
 
-  this -> _l1tJetLeadingGenJetTree -> Branch("leadingGenJet_id", &(this -> _genJetParticle.id), "leadingGenJet_id/i");
-  this -> _l1tJetLeadingGenJetTree -> Branch("leadingGenJet_pt", &(this -> _genJetParticle.pt), "leadingGenJet_pt/F");
-  this -> _l1tJetLeadingGenJetTree -> Branch("leadingGenJet_eta", &(this -> _genJetParticle.eta), "leadingGenJet_eta/F");
-  this -> _l1tJetLeadingGenJetTree -> Branch("leadingGenJet_phi", &(this -> _genJetParticle.phi), "leadingGenJet_phi/F");
+  this -> _l1tJetLeadingGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
+  this -> _l1tJetLeadingGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
+  this -> _l1tJetLeadingGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
+  this -> _l1tJetLeadingGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
   this -> _l1tJetLeadingGenJetTree -> Branch("l1tJet_id", &(this -> _l1tObjectParticle.id), "l1tJet_id/i");
   this -> _l1tJetLeadingGenJetTree -> Branch("l1tJet_pt", &(this -> _l1tObjectParticle.pt), "l1tJet_pt/F");
   this -> _l1tJetLeadingGenJetTree -> Branch("l1tJet_eta", &(this -> _l1tObjectParticle.eta), "l1tJet_eta/F");
@@ -156,10 +156,10 @@ MatchLeadingGenJetWithL1Objects::MatchLeadingGenJetWithL1Objects(const edm::Para
   this -> _l1tJetLeadingGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
   this -> _l1tJetLeadingGenJetTree -> Branch("matchingQuality", &(this -> _matchingQuality), "matchingQuality/F");
 
-  this -> _l1tEGammaLeadingGenJetTree -> Branch("leadingGenJet_id", &(this -> _genJetParticle.id), "leadingGenJet_id/i");
-  this -> _l1tEGammaLeadingGenJetTree -> Branch("leadingGenJet_pt", &(this -> _genJetParticle.pt), "leadingGenJet_pt/F");
-  this -> _l1tEGammaLeadingGenJetTree -> Branch("leadingGenJet_eta", &(this -> _genJetParticle.eta), "leadingGenJet_eta/F");
-  this -> _l1tEGammaLeadingGenJetTree -> Branch("leadingGenJet_phi", &(this -> _genJetParticle.phi), "leadingGenJet_phi/F");
+  this -> _l1tEGammaLeadingGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
+  this -> _l1tEGammaLeadingGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
+  this -> _l1tEGammaLeadingGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
+  this -> _l1tEGammaLeadingGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
   this -> _l1tEGammaLeadingGenJetTree -> Branch("l1tEGamma_id", &(this -> _l1tObjectParticle.id), "l1tEGamma_id/i");
   this -> _l1tEGammaLeadingGenJetTree -> Branch("l1tEGamma_pt", &(this -> _l1tObjectParticle.pt), "l1tEGamma_pt/F");
   this -> _l1tEGammaLeadingGenJetTree -> Branch("l1tEGamma_eta", &(this -> _l1tObjectParticle.eta), "l1tEGamma_eta/F");
@@ -168,10 +168,10 @@ MatchLeadingGenJetWithL1Objects::MatchLeadingGenJetWithL1Objects(const edm::Para
   this -> _l1tEGammaLeadingGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
   this -> _l1tEGammaLeadingGenJetTree -> Branch("matchingQuality", &(this -> _matchingQuality), "matchingQuality/F");
 
-  this -> _l1tTauLeadingGenJetTree -> Branch("leadingGenJet_id", &(this -> _genJetParticle.id), "leadingGenJet_id/i");
-  this -> _l1tTauLeadingGenJetTree -> Branch("leadingGenJet_pt", &(this -> _genJetParticle.pt), "leadingGenJet_pt/F");
-  this -> _l1tTauLeadingGenJetTree -> Branch("leadingGenJet_eta", &(this -> _genJetParticle.eta), "leadingGenJet_eta/F");
-  this -> _l1tTauLeadingGenJetTree -> Branch("leadingGenJet_phi", &(this -> _genJetParticle.phi), "leadingGenJet_phi/F");
+  this -> _l1tTauLeadingGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
+  this -> _l1tTauLeadingGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
+  this -> _l1tTauLeadingGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
+  this -> _l1tTauLeadingGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
   this -> _l1tTauLeadingGenJetTree -> Branch("l1tTau_id", &(this -> _l1tObjectParticle.id), "l1tTau_id/i");
   this -> _l1tTauLeadingGenJetTree -> Branch("l1tTau_pt", &(this -> _l1tObjectParticle.pt), "l1tTau_pt/F");
   this -> _l1tTauLeadingGenJetTree -> Branch("l1tTau_eta", &(this -> _l1tObjectParticle.eta), "l1tTau_eta/F");
@@ -181,10 +181,10 @@ MatchLeadingGenJetWithL1Objects::MatchLeadingGenJetWithL1Objects(const edm::Para
   this -> _l1tTauLeadingGenJetTree -> Branch("matchingQuality", &(this -> _matchingQuality), "matchingQuality/F");
 
   //Used to detemine the prob that a jet will be misidentified binned in pt
-  this -> _leadingGenJetTree -> Branch("leadingGenJet_id", &(this -> _genJetParticle.id), "leadingGenJet_id/i");
-  this -> _leadingGenJetTree -> Branch("leadingGenJet_pt", &(this -> _genJetParticle.pt), "leadingGenJet_pt/F");
-  this -> _leadingGenJetTree -> Branch("leadingGenJet_eta", &(this -> _genJetParticle.eta), "leadingGenJet_eta/F");
-  this -> _leadingGenJetTree -> Branch("leadingGenJet_phi", &(this -> _genJetParticle.phi), "leadingGenJet_phi/F");
+  this -> _leadingGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
+  this -> _leadingGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
+  this -> _leadingGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
+  this -> _leadingGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
 
 }
 
