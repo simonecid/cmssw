@@ -316,7 +316,7 @@ MatchLeadingGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::Ev
             *leadingGenJet,
             genJetCollectionHandle,
             l1tMuonCollectionHandle,
-            0.25,
+            1,
             true);
         std::vector<std::tuple<const l1t::Muon*,const  reco::GenJet*, float, int> > l1tMuonGenJetPairs;
         // if we have found a match let's add it.
@@ -333,7 +333,7 @@ MatchLeadingGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::Ev
           *leadingGenJet,
           genJetCollectionHandle,
           l1tJetCollectionHandle,
-          0.25,
+          1,
           true);
       std::vector<std::tuple<const l1t::Jet *, const reco::GenJet *, float, int>> l1tJetGenJetPairs;
       if (std::get<0>(l1tJetGenJetPair) != NULL) l1tJetGenJetPairs.push_back(l1tJetGenJetPair);
@@ -348,7 +348,7 @@ MatchLeadingGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::Ev
           *leadingGenJet,
           genJetCollectionHandle,
           l1tEGammaCollectionHandle,
-          0.25,
+          1,
           true);
       std::vector<std::tuple<const l1t::EGamma *, const reco::GenJet *, float, int>> l1tEGammaGenJetPairs;
       if (std::get<0>(l1tEGammaGenJetPair) != NULL) l1tEGammaGenJetPairs.push_back(l1tEGammaGenJetPair);
@@ -363,7 +363,7 @@ MatchLeadingGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::Ev
           *leadingGenJet,
           genJetCollectionHandle,
           l1tTauCollectionHandle,
-          0.25,
+          1,
           true);
       std::vector<std::tuple<const l1t::Tau *, const reco::GenJet *, float, int>> l1tTauGenJetPairs;
       if (std::get<0>(l1tTauGenJetPair) != NULL) l1tTauGenJetPairs.push_back(l1tTauGenJetPair);
