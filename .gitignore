@@ -4,3 +4,9 @@ __init__.py
 .#*
 #*#
 *~
+_*
+*.root
+*.png
+*.pdf
+.vscode
+*.tar.gz
