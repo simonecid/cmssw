@@ -29,7 +29,7 @@ while getopts "j:c:p:i:d:s:b:" o; do
     esac
 done
 
-export SCRAM_ARCH=slc6_amd64_gcc530
+export SCRAM_ARCH=slc6_amd64_gcc630
 
 echo "I am running on" $HOSTNAME
 
