@@ -1,7 +1,7 @@
 Universe = vanilla
-job = Gen
+job = MinBias_TuneCUETP8M1_14TeV_GenInfo
 cmd = L1TJetConvolutionCurves/MatchGenJetWithL1Objects/test/runCMSSWWrapper.sh
-args= -j $(job) -c $(cluster) -p $(process) -i L1TJetConvolutionCurves/MatchGenJetWithL1Objects/python/RunLeadingGenJetMatch_cfg.py -d l1tGenJetMatching_QCD_15_3000_NoPU_Phase1_ClosestDRMatch_MuonVeto_BarrelLeadingL1TJetOnly_OnlyBarrelLeadingGenJet -s source_QCD_Pt_15_3000_splitted -b convolutionCurves_BarrelLeadingL1TJetOnly_MuonVeto
+args= -j $(job) -c $(cluster) -p $(process) -i L1TJetConvolutionCurves/MatchGenJetWithL1Objects/python/SaveGenLevelInfo_cfg.py -d MinBias_TuneCUETP8M1_14TeV_GenInfo -s source_MinBias_TuneCUETP8M1_14TeV_splitted -b convolutionCurves_BarrelJetsOnly_crossMatch_CMSSW_9_3_0
 # Better not to put logs in the same folder, as they are plenty
 output = /storage/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).out
 error = /storage/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).err

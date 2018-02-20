@@ -30,8 +30,8 @@ process.source = getattr(import_module(
     "L1TJetConvolutionCurves.MatchGenJetWithL1Objects." + options.sourceFile), options.source)
 
 # UNCOMMENT ME!
-#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-process.maxEvents = cms.untracked.PSet(input=cms.untracked.int32(5000))
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+#process.maxEvents = cms.untracked.PSet(input=cms.untracked.int32(5000))
 
 process.TFileService = cms.Service(
     'TFileService', fileName=cms.string(options.outputFile))
