@@ -40,8 +40,8 @@ OUTPUT_FILENAME=${jobName}_${clusterId}.${processId}.root
 source /cvmfs/cms.cern.ch/cmsset_default.sh
 
 set -o xtrace
-cmsrel CMSSW_9_0_0
-cd CMSSW_9_0_0/src
+cmsrel CMSSW_9_3_0
+cd CMSSW_9_3_0/src
 cmsenv
 git cms-merge-topic simonecid:${BRANCH}
 scram b
