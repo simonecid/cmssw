@@ -405,7 +405,7 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
       iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
       const std::vector<std::tuple<const l1t::Muon*,const  reco::GenJet*, float, int> > 
         l1tMuonGenJetPairs = 
-          this -> _matchParticleWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle, 1);
+          this -> _matchParticleWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle, 5);
       this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
       float maxPt = 0;
       bool save = false;
