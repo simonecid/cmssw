@@ -104,7 +104,8 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
     (
       const edm::Handle<std::vector<TParticle>> &,
       const edm::Handle<BXVector<TTrigger>> &,
-      float = 0.25
+      float = 0.25,
+      bool = true
     );
 
     edm::EDGetTokenT<std::vector<reco::GenParticle>> *_genParticleCollectionTag;
@@ -405,7 +406,7 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
       iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
       const std::vector<std::tuple<const l1t::Muon*,const  reco::GenJet*, float, int> > 
         l1tMuonGenJetPairs = 
-          this -> _matchParticleWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle, 5);
+          this -> _matchParticleWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle, 5, false);
       this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
       float maxPt = 0;
       bool save = false;
@@ -633,7 +634,8 @@ MatchGenJetWithL1Objects::_matchParticleWithL1Object
 (
   const edm::Handle<std::vector<TParticle>>& particleCollectionHandle,
   const edm::Handle<BXVector<TTrigger>>& l1tObjectCollectionHandle,
-  float dr2Min 
+  float dr2Min,
+  bool crossMatch
 )
 {
   std::vector <std::tuple<const TTrigger*, const TParticle*, float, int> > l1tObjectParticlePairs;
@@ -647,7 +649,7 @@ MatchGenJetWithL1Objects::_matchParticleWithL1Object
         particleCollectionHandle,
         l1tObjectCollectionHandle,
         dr2Min,
-        true
+        crossMatch
       );
     // if we have found a match let's add it.
     if (std::get<0>(l1tObjectParticlePair) != NULL) l1tObjectParticlePairs.push_back(l1tObjectParticlePair);
