@@ -42,21 +42,13 @@ process.out = cms.OutputModule("PoolOutputModule",
 process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
   genParticleCollectionTag = cms.InputTag("genParticles"),
   genJetCollectionTag = cms.InputTag("ak4GenJets"),
-  l1tJetCollectionTag = cms.InputTag("simCaloStage2Digis"),
-  #l1tCaloTowerCollectionTag = cms.InputTag("simCaloStage2Digis", "MP"),
   l1tMuonCollectionTag = cms.InputTag("simGmtStage2Digis"),
-  l1tTauCollectionTag = cms.InputTag("simCaloStage2Digis"),
-  l1tEGammaCollectionTag = cms.InputTag("simCaloStage2Digis"),
 )
 
 process.MatchLeadingGenJetWithL1Objects = cms.EDAnalyzer('MatchLeadingGenJetWithL1Objects',
   genParticleCollectionTag = cms.InputTag("genParticles"),
   genJetCollectionTag = cms.InputTag("ak4GenJets"),
-  l1tJetCollectionTag = cms.InputTag("simCaloStage2Digis"),
-  #l1tCaloTowerCollectionTag = cms.InputTag("simCaloStage2Digis", "MP"),
   l1tMuonCollectionTag = cms.InputTag("simGmtStage2Digis"),
-  l1tTauCollectionTag = cms.InputTag("simCaloStage2Digis"),
-  l1tEGammaCollectionTag = cms.InputTag("simCaloStage2Digis"),
 )
 
 
