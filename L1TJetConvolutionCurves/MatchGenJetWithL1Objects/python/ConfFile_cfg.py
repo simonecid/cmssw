@@ -4,6 +4,8 @@ from importlib import import_module
 #from L1TJetConvolutionCurves.MatchGenJetWithL1Objects.source_SingleNeutrinoPU140_splitted import *
 
 process = cms.Process("MatchGenJetWithL1Objects")
+
+#process.Tracer = cms.Service("Tracer")
 #process = cms.Process("SaveEvent")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
@@ -39,8 +41,12 @@ process.out = cms.OutputModule("PoolOutputModule",
     )
 )
 
-process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
+process.GenMuonCollectionProducer = cms.EDProducer('GenMuonCollectionProducer',
   genParticleCollectionTag = cms.InputTag("genParticles"),
+)
+
+process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
+  genParticleCollectionTag = cms.InputTag( "GenMuonCollectionProducer", "GenMuons", "MatchGenJetWithL1Objects"),
   genJetCollectionTag = cms.InputTag("ak4GenJets"),
   l1tMuonCollectionTag = cms.InputTag("simGmtStage2Digis"),
 )
@@ -58,6 +64,7 @@ process.SaveEvent = cms.EDProducer('SaveEvent'
 process.EventNumberFilter = cms.EDFilter('EventNumberFilter'
 )
 
-process.p = cms.Path(process.MatchGenJetWithL1Objects + process.MatchLeadingGenJetWithL1Objects)
+process.p = cms.Path(process.GenMuonCollectionProducer *
+                     process.MatchGenJetWithL1Objects)
 
 #process.e = cms.EndPath(process.out)

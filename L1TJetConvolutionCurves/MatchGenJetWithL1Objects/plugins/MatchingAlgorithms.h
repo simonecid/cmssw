@@ -49,6 +49,7 @@ MatchingAlgorithms::matchParticleWithL1Object(
   const TTrigger *bestMatch = NULL;
   std::get<1>(l1tObjectGenJetPair) = &particle;
   std::get<0>(l1tObjectGenJetPair) = bestMatch;
+  std::get<2>(l1tObjectGenJetPair) = dr2Max;
 
   float currentDR2Best = dr2Max;
   float currentDR2Min = 0;
