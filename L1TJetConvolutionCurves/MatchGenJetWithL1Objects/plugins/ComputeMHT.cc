@@ -33,6 +33,7 @@
 #include "DataFormats/L1Trigger/interface/BXVector.h"
 
 #include "DataFormats/L1Trigger/interface/EtSum.h"
+#include "DataFormats/L1Trigger/interface/Jet.h"
 
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
@@ -73,6 +74,7 @@ class ComputeMHT : public edm::one::EDAnalyzer<edm::one::SharedResources> {
     virtual void endJob() override;
 
     edm::EDGetTokenT< BXVector<l1t::EtSum> >* _l1tEtSumCollectionTag;
+    //edm::EDGetTokenT< BXVector<l1t::Jet> >* _l1tJetCollectionTag;
 
     TTree * _MHTTree;
 
@@ -88,12 +90,14 @@ ComputeMHT::ComputeMHT(const edm::ParameterSet& iConfig)
   this -> _MHTTree -> Branch("mht", &(this -> _mht), "mht/F");
 
   this -> _l1tEtSumCollectionTag = new edm::EDGetTokenT< BXVector<l1t::EtSum> >(consumes< BXVector<l1t::EtSum> > (iConfig.getParameter< edm::InputTag >("l1tEtSumCollectionTag")));
+  //this -> _l1tJetCollectionTag = new edm::EDGetTokenT< BXVector<l1t::Jet> >(consumes< BXVector<l1t::Jet> > (iConfig.getParameter< edm::InputTag >("l1tEtSumCollectionTag")));
   
 }
 
 ComputeMHT::~ComputeMHT()
 {
   if (this -> _l1tEtSumCollectionTag) delete this -> _l1tEtSumCollectionTag;
+  //if (this -> _l1tEtSumCollectionTag) delete this -> _l1tJetCollectionTag;
 }
 
 
@@ -110,13 +114,30 @@ ComputeMHT::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle < BXVector< l1t::EtSum > > l1tEtSumCollectionHandle;
   iEvent.getByToken(*(this -> _l1tEtSumCollectionTag), l1tEtSumCollectionHandle);
 
+  //edm::Handle < BXVector< l1t::Jet > > l1tJetCollectionHandle;
+  //iEvent.getByToken(*(this -> _l1tJetCollectionTag), l1tJetCollectionHandle);
+
+  //math::XYZTLorentzVector ptSum;
+  //ptSum.SetPxPyPzE(0, 0, 0, 0);
+
+  this -> _mht = -1;
+
+  //for (auto l1tJetIterator = l1tJetCollectionHandle -> begin(0); l1tJetIterator != l1tJetCollectionHandle -> end(0); l1tJetIterator++ )
+  //{
+  //  if ((l1tJetIterator -> eta() < 1.5) && (l1tJetIterator -> eta() > -1.5)) ptSum += l1tJetIterator -> p4();
+  //}
+
   for (auto l1tEtSumIterator = l1tEtSumCollectionHandle -> begin(0); l1tEtSumIterator != l1tEtSumCollectionHandle -> end(0); l1tEtSumIterator++ )
   {
     if (l1tEtSumIterator -> getType() == l1t::EtSum::EtSumType::kMissingHt)
-      std::cout << "EtSum " << l1tEtSumIterator -> pt() << "\t" << "Type MHT: " << l1tEtSumIterator -> getType() << std::endl;
-    if (l1tEtSumIterator -> getType() == l1t::EtSum::EtSumType::kMissingHtHF)
-      std::cout << "EtSum " << l1tEtSumIterator -> pt() << "\t" << "Type MHTHF: " << l1tEtSumIterator -> getType() << std::endl;
+    {
+      this -> _mht = l1tEtSumIterator -> pt();
+    }
   }
+
+  //std::cout << "MHT from jet: " << ptSum.pt() << "\t" << "MHT from tag: " << this -> _mht << std::endl;
+
+  this -> _MHTTree -> Fill();
 
 }
 
