@@ -54,6 +54,7 @@
 #include "L1TJetConvolutionCurves/MatchGenJetWithL1Objects/plugins/MatchingAlgorithms.h"
 
 
+
 struct Particle {
   unsigned int id;
   float pt, eta, phi;
@@ -112,7 +113,7 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
     edm::EDGetTokenT<std::vector<reco::GenParticle>> *_genMuonCollectionTag;
     edm::EDGetTokenT< std::vector< reco::GenJet > > *_genJetCollectionTag;
     edm::EDGetTokenT< BXVector< l1t::Muon > > *_l1tMuonCollectionTag;
- 
+
     TTree * _l1tMuonGenJetGenMuonTree;
     Particle _genJetParticle;
     Particle _genMuonParticle;
@@ -126,7 +127,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _getTokens(iConfig);
   usesResource("TFileService");
   edm::Service<TFileService> fs;
-  this -> _l1tMuonGenJetGenMuonTree = fs -> make<TTree>("matchedL1TMuonGenJetTree", "TTree with generator-level jet & muon + L1T Muon information");
+  this -> _l1tMuonGenJetGenMuonTree = fs -> make<TTree>("matchedL1TMuonGenJetGenMuonTree", "TTree with generator-level jet & muon + L1T Muon information");
 
   this -> _l1tMuonGenJetGenMuonTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/I");
   this -> _l1tMuonGenJetGenMuonTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
@@ -143,7 +144,6 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tMuonGenJetGenMuonTree -> Branch("l1tMuon_qual", &(this -> _l1tObjectParticle.hwQual), "l1tMuon_qual/i");
   this -> _l1tMuonGenJetGenMuonTree -> Branch("deltaR2_genJet_l1tMuon", &(this -> _deltaR2_genJet_l1tMuon), "_deltaR2_genJet_l1tMuon/F");
   this -> _l1tMuonGenJetGenMuonTree -> Branch("deltaR2_genMuon_l1tMuon", &(this -> _deltaR2_genMuon_l1tMuon), "_deltaR2_genMuon_l1tMuon/F");
-
 
 }
 
@@ -197,6 +197,7 @@ MatchGenJetWithL1Objects::~MatchGenJetWithL1Objects()
 void
 MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+
   //Retrieving gen and l1t stuff
   edm::Handle < std::vector< reco::GenJet > > genJetCollectionHandle;
   iEvent.getByToken(*(this -> _genJetCollectionTag), genJetCollectionHandle);
