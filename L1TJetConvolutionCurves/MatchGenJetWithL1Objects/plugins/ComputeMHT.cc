@@ -77,8 +77,10 @@ class ComputeMHT : public edm::one::EDAnalyzer<edm::one::SharedResources> {
     //edm::EDGetTokenT< BXVector<l1t::Jet> >* _l1tJetCollectionTag;
 
     TTree * _MHTTree;
+    TTree * _HTTree;
 
     float _mht;
+    float _ht;
 };
 
 ComputeMHT::ComputeMHT(const edm::ParameterSet& iConfig)
@@ -88,6 +90,9 @@ ComputeMHT::ComputeMHT(const edm::ParameterSet& iConfig)
 
   this -> _MHTTree = fs -> make<TTree>("mhtTree", "TTree with L1T MHT");
   this -> _MHTTree -> Branch("mht", &(this -> _mht), "mht/F");
+  
+  this -> _HTTree = fs -> make<TTree>("htTree", "TTree with L1T HT");
+  this -> _HTTree -> Branch("ht", &(this -> _ht), "ht/F");
 
   this -> _l1tEtSumCollectionTag = new edm::EDGetTokenT< BXVector<l1t::EtSum> >(consumes< BXVector<l1t::EtSum> > (iConfig.getParameter< edm::InputTag >("l1tEtSumCollectionTag")));
   //this -> _l1tJetCollectionTag = new edm::EDGetTokenT< BXVector<l1t::Jet> >(consumes< BXVector<l1t::Jet> > (iConfig.getParameter< edm::InputTag >("l1tEtSumCollectionTag")));
@@ -132,12 +137,18 @@ ComputeMHT::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     if (l1tEtSumIterator -> getType() == l1t::EtSum::EtSumType::kMissingHt)
     {
       this -> _mht = l1tEtSumIterator -> pt();
+      this -> _MHTTree -> Fill();
+    }
+    
+    if (l1tEtSumIterator -> getType() == l1t::EtSum::EtSumType::kTotalHt)
+    {
+      this -> _ht = l1tEtSumIterator -> pt();
+      this -> _HTTree -> Fill();
     }
   }
 
   //std::cout << "MHT from jet: " << ptSum.pt() << "\t" << "MHT from tag: " << this -> _mht << std::endl;
 
-  this -> _MHTTree -> Fill();
 
 }
 
