@@ -7,6 +7,12 @@ process = cms.Process("MatchGenJetWithL1Objects")
 
 #process.Tracer = cms.Service("Tracer")
 #process = cms.Process("SaveEvent")
+process.load('Configuration.Geometry.GeometryExtended2023D4Reco_cff')
+process.load('Configuration.StandardSequences.Reconstruction_cff')
+process.load('Configuration.StandardSequences.MagneticField_cff')
+#process.load('RecoTracker.MeasurementDet.MeasurementTrackerEventProducer_cfi')
+#process.load('RecoTracker.MeasurementDet.MeasurementTrackerESProducer_cfi')
+process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
@@ -45,6 +51,18 @@ process.GenMuonCollectionProducer = cms.EDProducer('GenMuonCollectionProducer',
   genParticleCollectionTag = cms.InputTag("genParticles"),
 )
 
+process.PropagateGenMuonAndGenJetsTo2ndMuonStation = cms.EDProducer('PropagateGenMuonAndGenJetsTo2ndMuonStation',
+  genParticleCollectionTag = cms.InputTag("genParticles"),
+  genJetCollectionTag = cms.InputTag("ak4GenJets"),
+  prop2nd = cms.PSet(
+    useTrack = cms.string("none"),  # 'none' to use Candidate P4; or 'tracker', 'muon', 'global'
+    useState = cms.string("atVertex"), # 'innermost' and 'outermost' require the TrackExtra
+    useSimpleGeometry = cms.bool(True),
+    useStation2 = cms.bool(True),
+    fallbackToME1 = cms.bool(False)
+  )
+)
+
 process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
   genParticleCollectionTag = cms.InputTag( "GenMuonCollectionProducer", "GenMuons", "MatchGenJetWithL1Objects"),
   genJetCollectionTag = cms.InputTag("ak4GenJets"),
@@ -64,6 +82,12 @@ process.SaveEvent = cms.EDProducer('SaveEvent'
 process.EventNumberFilter = cms.EDFilter('EventNumberFilter'
 )
 
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(
+    process.GlobalTag, '90X_upgrade2023_realistic_v9', '')
+
+#process.p = cms.Path(process.PropagateGenMuonAndGenJetsTo2ndMuonStation *
+#                     process.MatchGenJetWithL1Objects)
 process.p = cms.Path(process.GenMuonCollectionProducer *
                      process.MatchGenJetWithL1Objects)
 
