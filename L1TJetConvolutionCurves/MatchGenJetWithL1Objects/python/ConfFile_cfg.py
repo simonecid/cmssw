@@ -64,7 +64,7 @@ process.PropagateGenMuonAndGenJetsTo2ndMuonStation = cms.EDProducer('PropagateGe
 )
 
 process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
-  genParticleCollectionTag = cms.InputTag( "GenMuonCollectionProducer", "GenMuons", "MatchGenJetWithL1Objects"),
+  genParticleCollectionTag = cms.InputTag( "PropagateGenMuonAndGenJetsTo2ndMuonStation", "PropagatedGenMuons", "MatchGenJetWithL1Objects"),
   genJetCollectionTag = cms.InputTag("ak4GenJets"),
   l1tMuonCollectionTag = cms.InputTag("simGmtStage2Digis"),
 )
@@ -86,9 +86,9 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(
     process.GlobalTag, '90X_upgrade2023_realistic_v9', '')
 
-#process.p = cms.Path(process.PropagateGenMuonAndGenJetsTo2ndMuonStation *
-#                     process.MatchGenJetWithL1Objects)
-process.p = cms.Path(process.GenMuonCollectionProducer *
+process.p = cms.Path(process.PropagateGenMuonAndGenJetsTo2ndMuonStation *
                      process.MatchGenJetWithL1Objects)
+#process.p = cms.Path(process.GenMuonCollectionProducer *
+#                     process.MatchGenJetWithL1Objects)
 
 #process.e = cms.EndPath(process.out)
