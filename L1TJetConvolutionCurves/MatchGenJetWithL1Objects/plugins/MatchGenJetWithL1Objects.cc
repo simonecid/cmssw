@@ -142,8 +142,8 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tMuonGenJetGenMuonTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectParticle.eta), "l1tMuon_eta/F");
   this -> _l1tMuonGenJetGenMuonTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectParticle.phi), "l1tMuon_phi/F");
   this -> _l1tMuonGenJetGenMuonTree -> Branch("l1tMuon_qual", &(this -> _l1tObjectParticle.hwQual), "l1tMuon_qual/i");
-  this -> _l1tMuonGenJetGenMuonTree -> Branch("deltaR2_genJet_l1tMuon", &(this -> _deltaR2_genJet_l1tMuon), "_deltaR2_genJet_l1tMuon/F");
-  this -> _l1tMuonGenJetGenMuonTree -> Branch("deltaR2_genMuon_l1tMuon", &(this -> _deltaR2_genMuon_l1tMuon), "_deltaR2_genMuon_l1tMuon/F");
+  this -> _l1tMuonGenJetGenMuonTree -> Branch("deltaR2_genJet_l1tMuon", &(this -> _deltaR2_genJet_l1tMuon), "deltaR2_genJet_l1tMuon/F");
+  this -> _l1tMuonGenJetGenMuonTree -> Branch("deltaR2_genMuon_l1tMuon", &(this -> _deltaR2_genMuon_l1tMuon), "deltaR2_genMuon_l1tMuon/F");
 
 }
 
