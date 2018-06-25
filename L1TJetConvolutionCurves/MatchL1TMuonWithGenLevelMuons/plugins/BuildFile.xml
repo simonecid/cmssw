@@ -6,5 +6,6 @@
 <use name="FWCore/ServiceRegistry"/>
 <use name="DataFormats/Math"/>
 <use name="DataFormats/HepMCCandidate"/>
+<use name="MuonAnalysis/MuonAssociators"/>
 
 <flags EDM_PLUGIN="1"/>
