@@ -9,6 +9,10 @@ process.load('Configuration.StandardSequences.Reconstruction_cff')
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(
+    process.GlobalTag, '90X_upgrade2023_realistic_v9', '')
+
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
 
@@ -36,7 +40,7 @@ process.source = getattr(import_module("L1TJetConvolutionCurves.MatchGenJetWithL
 process.TFileService = cms.Service('TFileService', fileName = cms.string(options.outputFile))
 
 process.MatchL1TMuonWithGenLevelMuons = cms.EDAnalyzer('MatchL1TMuonWithGenLevelMuons',
-  genParticleCollectionTag = cms.InputTag( "PropagateGenMuonAndGenJetsTo2ndMuonStation", "PropagatedGenMuons", "MatchGenJetWithL1Objects"),
+  genParticleCollectionTag = cms.InputTag( "PropagateGenMuonAndGenJetsTo2ndMuonStation", "PropagatedGenMuons", "MatchL1TMuonWithGenLevelMuons"),
   l1tMuonCollectionTag = cms.InputTag("simGmtStage2Digis"),
 )
 
