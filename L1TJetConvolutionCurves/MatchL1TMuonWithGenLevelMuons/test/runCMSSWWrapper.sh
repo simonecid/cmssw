@@ -2,7 +2,7 @@
 
 #set -o xtrace
 
-while getopts "j:c:p:i:d:" o; do
+while getopts "j:c:p:i:d:b:" o; do
   case "${o}" in
     j)
       jobName=${OPTARG}
@@ -46,6 +46,10 @@ scram b
 cmsRun ${inputFile} source=source_${processId} outputFile=${OUTPUT_FILENAME}
 
 echo "Will save on" /FCC-hh/${HDFS_DEST}
+
+mv ${OUTPUT_FILENAME} ${HOME_FOLDER}
+
+cd ${HOME_FOLDER}
 
 /usr/bin/hdfs dfs -mkdir -p /FCC-hh/${HDFS_DEST}
 /usr/bin/hdfs dfs -moveFromLocal ${OUTPUT_FILENAME} /FCC-hh/${HDFS_DEST}
