@@ -1,7 +1,7 @@
 Universe = vanilla
 job = genL1TMuonMatching_QCD_15_3000_NoPU_Phase1
 cmd = L1TJetConvolutionCurves/MatchL1TMuonWithGenLevelMuons/test/runCMSSWWrapper.sh
-args= -j $(job) -c $(cluster) -p $(process) -i L1TJetConvolutionCurves/MatchL1TMuonWithGenLevelMuons/python/ConfFile_cfg.py -d genMuonL1TMuonMatching_QCD_15_3000_NoPU_Phase1_WQualityBranch
+args= -j $(job) -c $(cluster) -p $(process) -i L1TJetConvolutionCurves/MatchL1TMuonWithGenLevelMuons/python/ConfFile_cfg.py -d genMuonL1TMuonMatching_QCD_15_3000_NoPU_Phase1_WQualityBranch_WPropagation -b convolutionCurves_MuonMatch_GenMuonPropagation
 # Better not to put logs in the same folder, as they are plenty
 output = /storage/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).out
 error = /storage/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).err
