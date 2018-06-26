@@ -27,7 +27,7 @@ options.register ('sourceFile',
                   VarParsing.VarParsing.multiplicity.singleton, # singleton or list
                   VarParsing.VarParsing.varType.string,          # string, int, or float
                   "File containing the splitted sources")
-options.outputFile = 'MatchL1TMuonWithGenLevelMuons_GluGlu_HToMuMu.root'
+options.outputFile = 'MatchL1TMuonWithGenLevelMuons.root'
 options.source = "source_0"
 options.sourceFile = "source_QCD_Pt_15_3000_splitted"
 
@@ -42,10 +42,6 @@ process.TFileService = cms.Service('TFileService', fileName = cms.string(options
 process.MatchL1TMuonWithGenLevelMuons = cms.EDAnalyzer('MatchL1TMuonWithGenLevelMuons',
   genParticleCollectionTag = cms.InputTag( "PropagateGenMuonAndGenJetsTo2ndMuonStation", "PropagatedGenMuons", "MatchL1TMuonWithGenLevelMuons"),
   l1tMuonCollectionTag = cms.InputTag("simGmtStage2Digis"),
-)
-
-process.GenMuonCollectionProducer = cms.EDProducer('GenMuonCollectionProducer',
-  genParticleCollectionTag = cms.InputTag("genParticles"),
 )
 
 process.PropagateGenMuonAndGenJetsTo2ndMuonStation = cms.EDProducer('PropagateGenMuonAndGenJetsTo2ndMuonStation',
