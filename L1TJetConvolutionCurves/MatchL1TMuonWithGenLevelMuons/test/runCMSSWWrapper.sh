@@ -19,6 +19,8 @@ while getopts "j:c:p:i:d:" o; do
     d)
       HDFS_DEST=${OPTARG}
       ;;
+    b)
+      BRANCH=${OPTARG}
     esac
 done
 
