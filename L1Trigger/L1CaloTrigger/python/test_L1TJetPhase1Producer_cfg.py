@@ -1,4 +1,6 @@
 import FWCore.ParameterSet.Config as cms
+from L1Trigger.L1CaloTrigger.caloEtaSegmentation import caloEtaSegmentation
+from math import pi
 
 process = cms.Process("L1TJetPhase1Producer")
 #process = cms.Process("SaveEvent")
@@ -15,7 +17,11 @@ process.source = process.source = cms.Source("PoolSource",
 
 process.L1TJetPhase1Producer = cms.EDProducer('L1TJetPhase1Producer',
   pfCandidateCollectionTag = cms.InputTag("l1pfProducer", "Puppi", "IN"),
-  pfClusterCollectionTag = cms.InputTag("pfClustersFromCombinedCalo", "calibrated", "IN")
+  pfClusterCollectionTag = cms.InputTag("pfClustersFromCombinedCalo", "calibrated", "IN"),
+  etaBinning = caloEtaSegmentation,
+  nBinsPhi = cms.uint32(72),
+  phiLow = cms.double(-pi),
+  phiUp = cms.double(pi),
 )
 
 process.p = cms.Path(process.L1TJetPhase1Producer)
