@@ -71,12 +71,20 @@ void l1t::Stage2MainProcessorFirmwareImp1::processEvent(const std::vector<l1t::C
   std::vector<l1t::EtSum> towerSums;
   std::vector<l1t::EtSum> jetSums;
 
+  std::cout << "!!!!!!!!!!!!!!!!!! " << std::endl;
+  std::cout << "Dumping full set of in-calotowers " << std::endl;
+  std::cout << "!!!!!!!!!!!!!!!!!! " << std::endl;
+  for (const auto & jet: inTowers)
+  {
+    std::cout << "Tower pt-eta-phi " << jet.pt() << "\t" << jet.eta() << "\t" << jet.phi() << std::endl;
+  }
+  
   m_towerAlgo->processEvent( inTowers, outTowers );
   m_egClusterAlgo->processEvent( outTowers, egClusters );
   m_egAlgo->processEvent( egClusters, outTowers, mpEGammas );
   m_tauClusterAlgo->processEvent( outTowers, tauClusters );
   m_tauAlgo->processEvent( tauClusters,outTowers, mpTaus );
-  m_jetAlgo->processEvent( outTowers, mpJets, mpAllJets );
+  m_jetAlgo->processEvent( outTowers, mpAllJets, mpJets );
   m_sumAlgo->processEvent( outTowers, towerSums );
   m_jetSumAlgo->processEvent( mpAllJets, jetSums );
 

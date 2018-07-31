@@ -474,43 +474,45 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
       this -> _l1tObjectParticle.phi = l1tJetIterator -> phi();
       this -> _l1tObjectParticle.hwQual = l1tJetIterator -> hwQual();            
       this -> _l1tJetTree -> Fill();
+      //std::cout << "jet pt-eta-phi " << this->_l1tObjectParticle.pt << "\t" << this->_l1tObjectParticle.eta << "\t" << this->_l1tObjectParticle.phi << std::endl;
     }
     
   }
 
-//  if (this->_l1tCaloTowerCollectionTag)
-//  {
-//    edm::Handle<BXVector<l1t::CaloTower>> l1tCaloTowerCollectionHandle;
-//    iEvent.getByToken(*(this->_l1tCaloTowerCollectionTag), l1tCaloTowerCollectionHandle);
-//    auto l1tCaloTowerGenJetPairs = this->_matchGenJetWithL1Object<>(genJetCollectionHandle, l1tCaloTowerCollectionHandle);
-//    this->_fillTreeWithMatchedPairs(*(this->_l1tCaloTowerGenJetTree), l1tCaloTowerGenJetPairs);
-//    float maxPt = 0;
-//    bool save = false;
-//    for (auto l1tCaloTowerIterator = l1tCaloTowerCollectionHandle->begin(0); l1tCaloTowerIterator != l1tCaloTowerCollectionHandle->end(0); l1tCaloTowerIterator++)
-//    {
-//      if ((l1tCaloTowerIterator->pt() > maxPt) && (l1tCaloTowerIterator->eta() < 1.44) && (l1tCaloTowerIterator->eta() > -1.44))
-//      {
-//        save = true;
-//        maxPt = l1tCaloTowerIterator->pt();
-//        this->_l1tObjectParticle.hwQual = l1tCaloTowerIterator->hwQual();
-//        this->_l1tObjectParticle.id = (l1tCaloTowerIterator - l1tCaloTowerCollectionHandle->begin(0));
-//        this->_l1tObjectParticle.pt = l1tCaloTowerIterator->pt();
-//        this->_l1tObjectParticle.eta = l1tCaloTowerIterator->eta();
-//        this->_l1tObjectParticle.phi = l1tCaloTowerIterator->phi();
-//      }
-//    }
-//    if (save) this->_l1tLeadingCaloTowerTree->Fill();
-//
-//    for (auto l1tCaloTowerIterator = l1tCaloTowerCollectionHandle->begin(0); l1tCaloTowerIterator != l1tCaloTowerCollectionHandle->end(0); l1tCaloTowerIterator++)
-//    {
-//      this->_l1tObjectParticle.id = (l1tCaloTowerIterator - l1tCaloTowerCollectionHandle->begin(0));
-//      this->_l1tObjectParticle.pt = l1tCaloTowerIterator->pt();
-//      this->_l1tObjectParticle.eta = l1tCaloTowerIterator->eta();
-//      this->_l1tObjectParticle.phi = l1tCaloTowerIterator->phi();
-//      this->_l1tObjectParticle.hwQual = l1tCaloTowerIterator->hwQual();
-//      this->_l1tCaloTowerTree->Fill();
-//    }
-//  }
+  if (this->_l1tCaloTowerCollectionTag)
+  {
+    edm::Handle<BXVector<l1t::CaloTower>> l1tCaloTowerCollectionHandle;
+    iEvent.getByToken(*(this->_l1tCaloTowerCollectionTag), l1tCaloTowerCollectionHandle);
+    auto l1tCaloTowerGenJetPairs = this->_matchGenJetWithL1Object<>(genJetCollectionHandle, l1tCaloTowerCollectionHandle);
+    this->_fillTreeWithMatchedPairs(*(this->_l1tCaloTowerGenJetTree), l1tCaloTowerGenJetPairs);
+    float maxPt = 0;
+    bool save = false;
+    for (auto l1tCaloTowerIterator = l1tCaloTowerCollectionHandle->begin(0); l1tCaloTowerIterator != l1tCaloTowerCollectionHandle->end(0); l1tCaloTowerIterator++)
+    {
+      if ((l1tCaloTowerIterator->pt() > maxPt) && (l1tCaloTowerIterator->eta() < 1.44) && (l1tCaloTowerIterator->eta() > -1.44))
+      {
+        save = true;
+        maxPt = l1tCaloTowerIterator->pt();
+        this->_l1tObjectParticle.hwQual = l1tCaloTowerIterator->hwQual();
+        this->_l1tObjectParticle.id = (l1tCaloTowerIterator - l1tCaloTowerCollectionHandle->begin(0));
+        this->_l1tObjectParticle.pt = l1tCaloTowerIterator->pt();
+        this->_l1tObjectParticle.eta = l1tCaloTowerIterator->eta();
+        this->_l1tObjectParticle.phi = l1tCaloTowerIterator->phi();
+      }
+    }
+    if (save) this->_l1tLeadingCaloTowerTree->Fill();
+
+    for (auto l1tCaloTowerIterator = l1tCaloTowerCollectionHandle->begin(); l1tCaloTowerIterator != l1tCaloTowerCollectionHandle->end(); l1tCaloTowerIterator++)
+    {
+      this->_l1tObjectParticle.id = (l1tCaloTowerIterator - l1tCaloTowerCollectionHandle->begin(0));
+      this->_l1tObjectParticle.pt = l1tCaloTowerIterator->pt();
+      this->_l1tObjectParticle.eta = l1tCaloTowerIterator->eta();
+      this->_l1tObjectParticle.phi = l1tCaloTowerIterator->phi();
+      this->_l1tObjectParticle.hwQual = l1tCaloTowerIterator->hwQual();
+      this->_l1tCaloTowerTree->Fill();
+      //std::cout << "calotower pt-eta-phi " << this->_l1tObjectParticle.pt << "\t" << this->_l1tObjectParticle.eta << "\t" << this->_l1tObjectParticle.phi << std::endl;
+    }
+  }
 
   if (this -> _l1tEGammaCollectionTag)
   {

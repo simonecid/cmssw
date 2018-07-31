@@ -36,12 +36,13 @@ from L1Trigger.L1TMuon.simDigis_cff import *
 from L1Trigger.L1TGlobal.simDigis_cff import *
 
 # define a core which can be extented in customizations:
+
 SimL1EmulatorCore = cms.Sequence(
     SimL1TCalorimeter +
     SimL1TMuon +
     SimL1TechnicalTriggers +
     SimL1TGlobal
-    )
+)
 
 SimL1Emulator = cms.Sequence( SimL1EmulatorCore )
 
