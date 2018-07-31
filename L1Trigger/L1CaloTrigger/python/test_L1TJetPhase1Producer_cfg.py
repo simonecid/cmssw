@@ -12,6 +12,8 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
 process.source = process.source = cms.Source("PoolSource",
   fileNames = cms.untracked.vstring('file:/six/sb17498/CMSSW_10_1_5/src/TTBar_300events.root')
 )
+
+process.TFileService = cms.Service('TFileService', fileName = cms.string("Histograms.root"))
 #process.source.skipEvents = cms.untracked.uint32(1)
 
 process.L1TJetPhase1Producer = cms.EDProducer('L1TJetPhase1Producer',
@@ -26,7 +28,13 @@ process.L1TJetPhase1Producer = cms.EDProducer('L1TJetPhase1Producer',
   seedPtThreshold = cms.double(6) # GeV
 )
 
-process.p = cms.Path(process.L1TJetPhase1Producer)
+process.DumpJets = cms.EDAnalyzer('PrintMomentum',
+  genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
+  phase1L1TJetFromPfCandidatesTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfCandidates", "L1TJetPhase1Producer"),
+  phase1L1TJetFromPfClustersTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfClusters", "L1TJetPhase1Producer")
+)
+
+process.p = cms.Path(process.L1TJetPhase1Producer + process.DumpJets)
 
 process.out = cms.OutputModule("PoolOutputModule",
   fileName = cms.untracked.string('myOutputFile.root')

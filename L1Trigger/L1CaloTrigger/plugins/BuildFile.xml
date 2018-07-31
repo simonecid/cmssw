@@ -18,6 +18,10 @@
 <use   name="SimCalorimetry/EcalEBTrigPrimProducers"/>
 <use   name="RecoLocalCalo/Configuration"/>
 <use   name="FastSimulation/CaloGeometryTools"/>
+<use   name="FWCore/PluginManager"/>
+<use   name="FWCore/ParameterSet"/>
+<use   name="DataFormats/JetReco"/>
+<use   name="PhysicsTools/UtilAlgos"/>
 <use   name="root"/>
 <use   name="boost"/>
 <flags EDM_PLUGIN="1"/>

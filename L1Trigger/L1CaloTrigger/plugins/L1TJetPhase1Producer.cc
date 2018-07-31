@@ -16,7 +16,7 @@ Description: Produces jets with sliding window algorithm using pfcluster and pfc
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/one/EDProducer.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "DataFormats/L1Trigger/interface/Jet.h"
 #include "DataFormats/Phase2L1ParticleFlow/interface/PFCandidate.h"
@@ -27,10 +27,13 @@ Description: Produces jets with sliding window algorithm using pfcluster and pfc
 #include "FWCore/Framework/interface/Event.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/L1Trigger/interface/BXVector.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
 
 #include "TH2F.h"
 
-class L1TJetPhase1Producer : public edm::EDProducer {
+//class L1TJetPhase1Producer : public edm::EDProducer {
+class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResources> {
    public:
       explicit L1TJetPhase1Producer(const edm::ParameterSet&);
       ~L1TJetPhase1Producer();
@@ -67,36 +70,9 @@ class L1TJetPhase1Producer : public edm::EDProducer {
 
 L1TJetPhase1Producer::L1TJetPhase1Producer(const edm::ParameterSet& iConfig)
 {
-  // Retrieving the pfCandidates and pfClusters if input tag has been provided
-  try
-  {
-    this -> _pfCandidateCollectionTag = new edm::EDGetTokenT< std::vector<l1t::PFCandidate> >(consumes< std::vector<l1t::PFCandidate> > (iConfig.getParameter< edm::InputTag >("pfCandidateCollectionTag")));
-    this -> _caloGridPfCandidate = new TH2F("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
-    this -> _caloGridPfCandidate -> GetXaxis() -> SetTitle("#eta");
-    this -> _caloGridPfCandidate -> GetYaxis() -> SetTitle("#phi");
-    produces<BXVector<l1t::Jet> >( "Phase1L1TJetFromPfCandidates" ).setBranchAlias("Phase1L1TJetFromPfCandidates");
-  } catch (std::exception const & ex) 
-  {
-    //std::cerr << ">>> pfCandidateCollectionTag not found" << std::endl;
-    this -> _pfCandidateCollectionTag = NULL;
-    this -> _caloGridPfCandidate = NULL;
-  }
-  
-  try
-  {
-    this -> _pfClusterCollectionTag = new edm::EDGetTokenT< std::vector<l1t::PFCluster> >(consumes< std::vector<l1t::PFCluster> > (iConfig.getParameter< edm::InputTag >("pfClusterCollectionTag")));
-    this -> _caloGridPfCluster = new TH2F("caloGridPfCluster", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
-    this -> _caloGridPfCluster -> GetXaxis() -> SetTitle("#eta");
-    this -> _caloGridPfCluster -> GetYaxis() -> SetTitle("#phi");
-    produces<BXVector<l1t::Jet> >( "Phase1L1TJetFromPfClusters" ).setBranchAlias("Phase1L1TJetFromPfClusters");
-  } catch (std::exception const & ex) 
-  {
-    //std::cerr << ">>> pfClusterCollectionTag not found" << std::endl;
-    this -> _pfClusterCollectionTag = NULL;
-    this -> _caloGridPfCluster = NULL;
-  }
 
-
+  usesResource("TFileService");
+  edm::Service<TFileService> fs;
 
   this -> _etaBinning = iConfig.getParameter<std::vector<double> >("etaBinning");
   this -> _nBinsEta = this -> _etaBinning.size() - 1;
@@ -107,14 +83,45 @@ L1TJetPhase1Producer::L1TJetPhase1Producer(const edm::ParameterSet& iConfig)
   this -> _jetIPhiSize = iConfig.getParameter<unsigned int>("jetIPhiSize");
   this -> _seedPtThreshold = iConfig.getParameter<double>("seedPtThreshold");
 
+  // Retrieving the pfCandidates and pfClusters if input tag has been provided
+  try
+  {
+    this -> _pfCandidateCollectionTag = new edm::EDGetTokenT< std::vector<l1t::PFCandidate> >(consumes< std::vector<l1t::PFCandidate> > (iConfig.getParameter< edm::InputTag >("pfCandidateCollectionTag")));
+    //this -> _caloGridPfCandidate = new TH2F("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    this -> _caloGridPfCandidate = fs -> make<TH2F>("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    this -> _caloGridPfCandidate -> GetXaxis() -> SetTitle("#eta");
+    this -> _caloGridPfCandidate -> GetYaxis() -> SetTitle("#phi");
+    produces<BXVector<l1t::Jet> >( "Phase1L1TJetFromPfCandidates" ).setBranchAlias("Phase1L1TJetFromPfCandidates");
+  } catch (std::exception const & ex) 
+  {
+    std::cerr << ">>> pfCandidateCollectionTag not found" << std::endl;
+    this -> _pfCandidateCollectionTag = NULL;
+    this -> _caloGridPfCandidate = NULL;
+  }
+  
+  try
+  {
+    this -> _pfClusterCollectionTag = new edm::EDGetTokenT< std::vector<l1t::PFCluster> >(consumes< std::vector<l1t::PFCluster> > (iConfig.getParameter< edm::InputTag >("pfClusterCollectionTag")));
+    //this -> _caloGridPfCluster = new TH2F("caloGridPfCluster", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    this -> _caloGridPfCluster = fs -> make<TH2F>("caloGridPfCluster", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    this -> _caloGridPfCluster -> GetXaxis() -> SetTitle("#eta");
+    this -> _caloGridPfCluster -> GetYaxis() -> SetTitle("#phi");
+    produces<BXVector<l1t::Jet> >( "Phase1L1TJetFromPfClusters" ).setBranchAlias("Phase1L1TJetFromPfClusters");
+  } catch (std::exception const & ex) 
+  {
+    std::cerr << ">>> pfClusterCollectionTag not found" << std::endl;
+    this -> _pfClusterCollectionTag = NULL;
+    this -> _caloGridPfCluster = NULL;
+  }
+
 }
 
 L1TJetPhase1Producer::~L1TJetPhase1Producer()
 {
   if (this -> _pfCandidateCollectionTag) delete this -> _pfCandidateCollectionTag;
   if (this -> _pfClusterCollectionTag) delete this -> _pfClusterCollectionTag;
-  if (this -> _caloGridPfCandidate) delete this -> _caloGridPfCandidate;
-  if (this -> _caloGridPfCluster) delete this -> _caloGridPfCluster;
+  //if (this -> _caloGridPfCandidate) delete this -> _caloGridPfCandidate;
+  //if (this -> _caloGridPfCluster) delete this -> _caloGridPfCluster;
 }
 
 float L1TJetPhase1Producer::_getTowerEnergy(const TH2F & caloGrid, int iEta, int iPhi)
@@ -150,12 +157,12 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     edm::Handle < std::vector< l1t::PFCandidate > > pfCandidateCollectionHandle;
     iEvent.getByToken(*(this -> _pfCandidateCollectionTag), pfCandidateCollectionHandle);
     // dumping the data
-    //std::cout << ">>>>>> DUMPING PFCANDIDATES <<<<<<" << std::endl;
+    std::cout << ">>>>>> DUMPING PFCANDIDATES <<<<<<" << std::endl;
     //for (auto pfCandidateIterator = pfCandidateCollectionHandle -> begin(); pfCandidateIterator != pfCandidateCollectionHandle -> end(); pfCandidateIterator++) 
     //{
     //  std::cout << pfCandidateIterator -> pt() << "\t" << pfCandidateIterator -> eta() << "\t" << pfCandidateIterator -> phi() << "\t" << std::endl;
     //}
-    this -> _caloGridPfCandidate -> Reset();
+    //this -> _caloGridPfCandidate -> Reset();
     this -> _fillCaloGrid<>(*(this -> _caloGridPfCandidate), *pfCandidateCollectionHandle);
     const auto seedsVector = this -> _findSeeds(*(this -> _caloGridPfCandidate), this -> _seedPtThreshold); // seedPtThreshold = 6
     const auto l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCandidate), seedsVector);
@@ -167,18 +174,19 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     edm::Handle < std::vector< l1t::PFCluster > > pfClusterCollectionHandle;
     iEvent.getByToken(*(this -> _pfClusterCollectionTag), pfClusterCollectionHandle);
     // dumping the data
-    //std::cout << ">>>>>> DUMPING PFCLUSTERS <<<<<<" << std::endl;
+    std::cout << ">>>>>> DUMPING PFCLUSTERS <<<<<<" << std::endl;
     //for (auto pfClusterIterator = pfClusterCollectionHandle -> begin(); pfClusterIterator != pfClusterCollectionHandle -> end(); pfClusterIterator++) 
     //{
     //  std::cout << pfClusterIterator -> pt() << "\t" << pfClusterIterator -> eta() << "\t" << pfClusterIterator -> phi() << "\t" << std::endl;
     //}
-    this -> _caloGridPfCandidate -> Reset();
+    //this -> _caloGridPfCluster -> Reset();
     this -> _fillCaloGrid<>(*(this -> _caloGridPfCluster), *pfClusterCollectionHandle);
     const auto seedsVector = this -> _findSeeds(*(this -> _caloGridPfCluster), this -> _seedPtThreshold); // seedPtThreshold = 6
     const auto l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCluster), seedsVector);
     std::unique_ptr< BXVector<l1t::Jet> > l1jetVectorPtr(new BXVector<l1t::Jet>(l1jetVector));
     iEvent.put(std::move(l1jetVectorPtr), "Phase1L1TJetFromPfClusters");
   }
+
 
 
   return;
@@ -235,6 +243,7 @@ std::vector<std::tuple<int, int>> L1TJetPhase1Producer::_findSeeds(const TH2F & 
 
       if (isLocalMaximum)
       {
+        std::cout << "Seed found @ " << x << ", " << y << std::endl;
         seeds.emplace_back(std::make_tuple(x, y));
       }
     }
@@ -290,7 +299,7 @@ void L1TJetPhase1Producer::_fillCaloGrid(TH2F & caloGrid, const std::vector<Trig
   //Filling the calo grid with the primitives
   for (auto primitiveIterator = triggerPrimitives.begin(); primitiveIterator != triggerPrimitives.end(); primitiveIterator++) 
   {
-    caloGrid.Fill(primitiveIterator -> eta(), primitiveIterator -> phi(), primitiveIterator -> pt());
+    caloGrid.Fill((float) primitiveIterator -> eta(), (float) primitiveIterator -> phi(), (float) primitiveIterator -> pt());
   }
   return;
 }
