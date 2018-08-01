@@ -89,6 +89,14 @@ L1TJetPhase1Producer::L1TJetPhase1Producer(const edm::ParameterSet& iConfig)
     this -> _pfCandidateCollectionTag = new edm::EDGetTokenT< std::vector<l1t::PFCandidate> >(consumes< std::vector<l1t::PFCandidate> > (iConfig.getParameter< edm::InputTag >("pfCandidateCollectionTag")));
     //this -> _caloGridPfCandidate = new TH2F("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
     this -> _caloGridPfCandidate = fs -> make<TH2F>("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    this -> _caloGridPfCandidate -> SetBinContent(1, 1, 5);
+    this -> _caloGridPfCandidate -> SetBinContent(1, 2, 5);
+    this -> _caloGridPfCandidate -> SetBinContent(2, 2, 5);
+    this -> _caloGridPfCandidate -> SetBinContent(2, 1, 5);
+    this -> _caloGridPfCandidate -> SetBinContent(82, 1, 5);
+    this -> _caloGridPfCandidate -> SetBinContent(1, 72, 5);
+    this -> _caloGridPfCandidate -> SetBinContent(82, 1, 5);
+    this -> _caloGridPfCandidate -> SetBinContent(1, 72, 5);
     this -> _caloGridPfCandidate -> GetXaxis() -> SetTitle("#eta");
     this -> _caloGridPfCandidate -> GetYaxis() -> SetTitle("#phi");
     produces<BXVector<l1t::Jet> >( "Phase1L1TJetFromPfCandidates" ).setBranchAlias("Phase1L1TJetFromPfCandidates");
@@ -163,7 +171,8 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     //  std::cout << pfCandidateIterator -> pt() << "\t" << pfCandidateIterator -> eta() << "\t" << pfCandidateIterator -> phi() << "\t" << std::endl;
     //}
     //this -> _caloGridPfCandidate -> Reset();
-    this -> _fillCaloGrid<>(*(this -> _caloGridPfCandidate), *pfCandidateCollectionHandle);
+    
+    //this -> _fillCaloGrid<>(*(this -> _caloGridPfCandidate), *pfCandidateCollectionHandle);
     const auto seedsVector = this -> _findSeeds(*(this -> _caloGridPfCandidate), this -> _seedPtThreshold); // seedPtThreshold = 6
     const auto l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCandidate), seedsVector);
     std::unique_ptr< BXVector<l1t::Jet> > l1jetVectorPtr(new BXVector<l1t::Jet>(l1jetVector));
@@ -180,7 +189,8 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     //  std::cout << pfClusterIterator -> pt() << "\t" << pfClusterIterator -> eta() << "\t" << pfClusterIterator -> phi() << "\t" << std::endl;
     //}
     //this -> _caloGridPfCluster -> Reset();
-    this -> _fillCaloGrid<>(*(this -> _caloGridPfCluster), *pfClusterCollectionHandle);
+    
+    //this -> _fillCaloGrid<>(*(this -> _caloGridPfCluster), *pfClusterCollectionHandle);
     const auto seedsVector = this -> _findSeeds(*(this -> _caloGridPfCluster), this -> _seedPtThreshold); // seedPtThreshold = 6
     const auto l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCluster), seedsVector);
     std::unique_ptr< BXVector<l1t::Jet> > l1jetVectorPtr(new BXVector<l1t::Jet>(l1jetVector));
@@ -201,50 +211,52 @@ std::vector<std::tuple<int, int>> L1TJetPhase1Producer::_findSeeds(const TH2F & 
 
   std::vector<std::tuple<int, int>> seeds;
 
+  //int etaHalfSize = (int) this -> _jetIEtaSize/2;
+  //int phiHalfSize = (int) this -> _jetIPhiSize/2;
+  
+  int etaHalfSize = 1;
+  int phiHalfSize = 1;
+
   // for each point of the grid check if it is a local maximum
-  // to do so I take a point, and look if is greater than the points around it (in the 3x3 neighborhood)
+  // to do so I take a point, and look if is greater than the points around it (in the 9x9 neighborhood)
   // to prevent mutual exclusion, I check greater or equal for points above and right to the one I am considering (including the top-left point)
   // to prevent mutual exclusion, I check greater for points below and left to the one I am considering (including the bottom-right point)
 
-  for (int y = 1; y <= nBinsY; y++)
+  for (int iPhi = 1; iPhi <= nBinsY; iPhi++)
   {
-    for (int x = 1; x <= nBinsX; x++)
+    for (int iEta = 1; iEta <= nBinsX; iEta++)
     {
-      float centralPt = caloGrid.GetBinContent(x, y);
+      float centralPt = caloGrid.GetBinContent(iEta, iPhi);
       if (centralPt <= seedThreshold) continue;
       bool isLocalMaximum = true;
 
-      // Y gets recomputed in order to take account of periodicity in phi
-      int oldY = y;
-      if (y == nBinsY) {
-        y = 0;
+      // Scanning through the grid centered on the seed
+      for (int etaIndex = -etaHalfSize; etaIndex <= etaHalfSize; etaIndex++)
+      {
+        for (int phiIndex = -phiHalfSize; phiIndex <= phiHalfSize; phiIndex++)
+        {
+          if ((etaIndex == 0) && (phiIndex == 0)) continue;
+          if (phiIndex > 0) {
+            // >=
+            isLocalMaximum = ((isLocalMaximum) && (centralPt >= this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
+          } else if (phiIndex < 0) {
+            // >
+            isLocalMaximum = ((isLocalMaximum) && (centralPt > this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
+          } else if (etaIndex > 0) { //phiIndex = 0, left side is >, right is >=
+            // >=
+            isLocalMaximum = ((isLocalMaximum) && (centralPt >= this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
+          } else {
+            // >
+            isLocalMaximum = ((isLocalMaximum) && (centralPt > this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
+          }
+        }
+
       }
-      //top right angle (greater/equal)
-      if (x > 1) isLocalMaximum = ((isLocalMaximum) && (centralPt >= caloGrid.GetBinContent(x - 1, y + 1)));
-      isLocalMaximum = ((isLocalMaximum) && (centralPt >= caloGrid.GetBinContent(x, y + 1)));
-      if (x < nBinsX) isLocalMaximum = ((isLocalMaximum) && (centralPt >= caloGrid.GetBinContent(x + 1, y + 1)));
-      y = oldY;
-
-      if (x < nBinsX) isLocalMaximum = ((isLocalMaximum) && (centralPt >= caloGrid.GetBinContent(x + 1, y)));
-
-
-      //bottom left angle (greater)
-      if (x > 1) isLocalMaximum = ((isLocalMaximum) && (centralPt > caloGrid.GetBinContent(x - 1, y)));
-
-      // Y gets recomputed in order to take account of periodicity in phi      
-      oldY = y;
-      if (y == 1) {
-        y = nBinsY + 1;
-      }
-      if (x > 1) isLocalMaximum = ((isLocalMaximum) && (centralPt > caloGrid.GetBinContent(x - 1 , y - 1)));
-      isLocalMaximum = ((isLocalMaximum) && (centralPt > caloGrid.GetBinContent(x, y - 1)));
-      if (x < nBinsX) isLocalMaximum = ((isLocalMaximum) && (centralPt > caloGrid.GetBinContent(x + 1, y - 1)));
-      y = oldY;
 
       if (isLocalMaximum)
       {
-        std::cout << "Seed found @ " << x << ", " << y << std::endl;
-        seeds.emplace_back(std::make_tuple(x, y));
+        std::cout << "Seed found @ " << iEta << ", " << iPhi << std::endl;
+        seeds.emplace_back(std::make_tuple(iEta, iPhi));
       }
     }
   }
@@ -262,8 +274,8 @@ BXVector<l1t::Jet> L1TJetPhase1Producer::_buildJetsFromSeeds(const TH2F & caloGr
     int iEta = std::get<0>(seed);
     int iPhi = std::get<1>(seed);
 
-    int etaHalfSize = (int) _jetIEtaSize/2;
-    int phiHalfSize = (int) _jetIPhiSize/2;
+    int etaHalfSize = (int) this -> _jetIEtaSize/2;
+    int phiHalfSize = (int) this -> _jetIPhiSize/2;
 
     float ptSum = 0;
     // Scanning through the grid centered on the seed

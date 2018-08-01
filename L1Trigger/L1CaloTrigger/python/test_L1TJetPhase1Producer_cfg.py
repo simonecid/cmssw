@@ -25,7 +25,7 @@ process.L1TJetPhase1Producer = cms.EDProducer('L1TJetPhase1Producer',
   phiUp = cms.double(pi),
   jetIEtaSize = cms.uint32(9),
   jetIPhiSize = cms.uint32(9),
-  seedPtThreshold = cms.double(6) # GeV
+  seedPtThreshold = cms.double(4) # GeV
 )
 
 process.DumpJets = cms.EDAnalyzer('PrintMomentum',
