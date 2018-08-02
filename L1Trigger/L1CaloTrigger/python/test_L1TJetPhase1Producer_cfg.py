@@ -18,7 +18,7 @@ process.TFileService = cms.Service('TFileService', fileName = cms.string("Histog
 
 process.L1TJetPhase1Producer = cms.EDProducer('L1TJetPhase1Producer',
   pfCandidateCollectionTag = cms.InputTag("l1pfProducer", "Puppi", "IN"),
-  pfClusterCollectionTag = cms.InputTag("pfClustersFromCombinedCalo", "calibrated", "IN"),
+  pfClusterCollectionTag = cms.InputTag("pfClustersFromCombinedCalo", "uncalibrated", "IN"),
   etaBinning = caloEtaSegmentation,
   nBinsPhi = cms.uint32(72),
   phiLow = cms.double(-pi),

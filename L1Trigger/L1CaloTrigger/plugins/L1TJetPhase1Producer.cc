@@ -32,6 +32,8 @@ Description: Produces jets with sliding window algorithm using pfcluster and pfc
 
 #include "TH2F.h"
 
+#include <csignal>
+
 //class L1TJetPhase1Producer : public edm::EDProducer {
 class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResources> {
    public:
@@ -89,14 +91,6 @@ L1TJetPhase1Producer::L1TJetPhase1Producer(const edm::ParameterSet& iConfig)
     this -> _pfCandidateCollectionTag = new edm::EDGetTokenT< std::vector<l1t::PFCandidate> >(consumes< std::vector<l1t::PFCandidate> > (iConfig.getParameter< edm::InputTag >("pfCandidateCollectionTag")));
     //this -> _caloGridPfCandidate = new TH2F("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
     this -> _caloGridPfCandidate = fs -> make<TH2F>("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
-    this -> _caloGridPfCandidate -> SetBinContent(1, 1, 5);
-    this -> _caloGridPfCandidate -> SetBinContent(1, 2, 5);
-    this -> _caloGridPfCandidate -> SetBinContent(2, 2, 5);
-    this -> _caloGridPfCandidate -> SetBinContent(2, 1, 5);
-    this -> _caloGridPfCandidate -> SetBinContent(82, 1, 5);
-    this -> _caloGridPfCandidate -> SetBinContent(1, 72, 5);
-    this -> _caloGridPfCandidate -> SetBinContent(82, 1, 5);
-    this -> _caloGridPfCandidate -> SetBinContent(1, 72, 5);
     this -> _caloGridPfCandidate -> GetXaxis() -> SetTitle("#eta");
     this -> _caloGridPfCandidate -> GetYaxis() -> SetTitle("#phi");
     produces<BXVector<l1t::Jet> >( "Phase1L1TJetFromPfCandidates" ).setBranchAlias("Phase1L1TJetFromPfCandidates");
@@ -165,14 +159,14 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     edm::Handle < std::vector< l1t::PFCandidate > > pfCandidateCollectionHandle;
     iEvent.getByToken(*(this -> _pfCandidateCollectionTag), pfCandidateCollectionHandle);
     // dumping the data
-    std::cout << ">>>>>> DUMPING PFCANDIDATES <<<<<<" << std::endl;
+    //std::cout << ">>>>>> DUMPING PFCANDIDATES <<<<<<" << std::endl;
     //for (auto pfCandidateIterator = pfCandidateCollectionHandle -> begin(); pfCandidateIterator != pfCandidateCollectionHandle -> end(); pfCandidateIterator++) 
     //{
     //  std::cout << pfCandidateIterator -> pt() << "\t" << pfCandidateIterator -> eta() << "\t" << pfCandidateIterator -> phi() << "\t" << std::endl;
     //}
-    //this -> _caloGridPfCandidate -> Reset();
     
-    //this -> _fillCaloGrid<>(*(this -> _caloGridPfCandidate), *pfCandidateCollectionHandle);
+    this -> _caloGridPfCandidate -> Reset();
+    this -> _fillCaloGrid<>(*(this -> _caloGridPfCandidate), *pfCandidateCollectionHandle);
     const auto seedsVector = this -> _findSeeds(*(this -> _caloGridPfCandidate), this -> _seedPtThreshold); // seedPtThreshold = 6
     const auto l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCandidate), seedsVector);
     std::unique_ptr< BXVector<l1t::Jet> > l1jetVectorPtr(new BXVector<l1t::Jet>(l1jetVector));
@@ -183,14 +177,14 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     edm::Handle < std::vector< l1t::PFCluster > > pfClusterCollectionHandle;
     iEvent.getByToken(*(this -> _pfClusterCollectionTag), pfClusterCollectionHandle);
     // dumping the data
-    std::cout << ">>>>>> DUMPING PFCLUSTERS <<<<<<" << std::endl;
+    //std::cout << ">>>>>> DUMPING PFCLUSTERS <<<<<<" << std::endl;
     //for (auto pfClusterIterator = pfClusterCollectionHandle -> begin(); pfClusterIterator != pfClusterCollectionHandle -> end(); pfClusterIterator++) 
     //{
     //  std::cout << pfClusterIterator -> pt() << "\t" << pfClusterIterator -> eta() << "\t" << pfClusterIterator -> phi() << "\t" << std::endl;
     //}
-    //this -> _caloGridPfCluster -> Reset();
     
-    //this -> _fillCaloGrid<>(*(this -> _caloGridPfCluster), *pfClusterCollectionHandle);
+    this -> _caloGridPfCluster -> Reset();
+    this -> _fillCaloGrid<>(*(this -> _caloGridPfCluster), *pfClusterCollectionHandle);
     const auto seedsVector = this -> _findSeeds(*(this -> _caloGridPfCluster), this -> _seedPtThreshold); // seedPtThreshold = 6
     const auto l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCluster), seedsVector);
     std::unique_ptr< BXVector<l1t::Jet> > l1jetVectorPtr(new BXVector<l1t::Jet>(l1jetVector));
@@ -211,11 +205,8 @@ std::vector<std::tuple<int, int>> L1TJetPhase1Producer::_findSeeds(const TH2F & 
 
   std::vector<std::tuple<int, int>> seeds;
 
-  //int etaHalfSize = (int) this -> _jetIEtaSize/2;
-  //int phiHalfSize = (int) this -> _jetIPhiSize/2;
-  
-  int etaHalfSize = 1;
-  int phiHalfSize = 1;
+  int etaHalfSize = (int) this -> _jetIEtaSize/2;
+  int phiHalfSize = (int) this -> _jetIPhiSize/2;
 
   // for each point of the grid check if it is a local maximum
   // to do so I take a point, and look if is greater than the points around it (in the 9x9 neighborhood)
@@ -250,14 +241,13 @@ std::vector<std::tuple<int, int>> L1TJetPhase1Producer::_findSeeds(const TH2F & 
             isLocalMaximum = ((isLocalMaximum) && (centralPt > this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
           }
         }
-
       }
 
       if (isLocalMaximum)
       {
-        std::cout << "Seed found @ " << iEta << ", " << iPhi << std::endl;
         seeds.emplace_back(std::make_tuple(iEta, iPhi));
       }
+
     }
   }
 
@@ -269,7 +259,7 @@ BXVector<l1t::Jet> L1TJetPhase1Producer::_buildJetsFromSeeds(const TH2F & caloGr
 
   // For each seed take a grid centered on the seed of the size specified by the user
   // Sum the pf in the grid, that will be the pt of the l1t jet. Eta and phi of the jet is taken from the seed.
-  BXVector<l1t::Jet> jets(seeds.size());
+  BXVector<l1t::Jet> jets;
   for (const auto& seed: seeds){
     int iEta = std::get<0>(seed);
     int iPhi = std::get<1>(seed);
@@ -297,9 +287,7 @@ BXVector<l1t::Jet> L1TJetPhase1Producer::_buildJetsFromSeeds(const TH2F & caloGr
     ptVector.SetPhi(caloGrid.GetYaxis() -> GetBinCenter(iPhi));
 
     l1t::Jet jet(ptVector);
-
     jets.push_back(0, jet);
-    
   }
 
   return jets;
