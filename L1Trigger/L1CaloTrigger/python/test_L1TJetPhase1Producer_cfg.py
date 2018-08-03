@@ -28,13 +28,12 @@ process.L1TJetPhase1Producer = cms.EDProducer('L1TJetPhase1Producer',
   seedPtThreshold = cms.double(4) # GeV
 )
 
-process.DumpJets = cms.EDAnalyzer('PrintMomentum',
+process.MatchGenJetWithL1Objects = cms.EDAnalyzer('MatchGenJetWithL1Objects',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  phase1L1TJetFromPfCandidatesTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfCandidates", "L1TJetPhase1Producer"),
-  phase1L1TJetFromPfClustersTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfClusters", "L1TJetPhase1Producer")
+  l1tJetCollectionTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfCandidates", "L1TJetPhase1Producer"),
 )
 
-process.p = cms.Path(process.L1TJetPhase1Producer + process.DumpJets)
+process.p = cms.Path(process.L1TJetPhase1Producer + process.MatchGenJetWithL1Objects)
 
 process.out = cms.OutputModule("PoolOutputModule",
   fileName = cms.untracked.string('myOutputFile.root')

@@ -50,7 +50,7 @@
 #include "TTree.h"
 
 #include <utility>
-#include "L1TJetConvolutionCurves/MatchGenJetWithL1Objects/plugins/MatchingAlgorithms.h"
+#include "TriggerPerformanceAnalysis/MatchGenJetWithL1Objects/interface/MatchingAlgorithms.hxx"
 
 
 struct Particle {
@@ -130,6 +130,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   edm::Service<TFileService> fs;
   this -> _l1tJetGenJetTree = fs -> make<TTree>("matchedL1TJetGenJetTree", "TTree with generator-level jet / L1T Jet information");
   this -> _genJetTree = fs -> make<TTree>("genJetTree", "TTree with generator-level jet information");
+  this -> _l1tJetTree = fs -> make<TTree>("l1tJetTree", "TTree with generator-level jet / L1T Jet information");
 
   this -> _l1tJetGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
   this -> _l1tJetGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
@@ -186,12 +187,7 @@ void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
 void MatchGenJetWithL1Objects::_freeTokens()
 {
   if (this -> _genJetCollectionTag) delete this -> _genJetCollectionTag;
-  if (this -> _genParticleCollectionTag) delete this -> _genParticleCollectionTag;
-  if (this -> _l1tCaloTowerCollectionTag) delete this -> _l1tCaloTowerCollectionTag;
-  if (this -> _l1tMuonCollectionTag) delete this -> _l1tMuonCollectionTag;
   if (this -> _l1tJetCollectionTag) delete this -> _l1tJetCollectionTag;
-  if (this -> _l1tEGammaCollectionTag) delete this -> _l1tEGammaCollectionTag;
-  if (this -> _l1tTauCollectionTag) delete this -> _l1tTauCollectionTag;
 }
 
 MatchGenJetWithL1Objects::~MatchGenJetWithL1Objects()
@@ -212,85 +208,12 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
   edm::Handle < std::vector< reco::GenJet > > genJetCollectionHandle;
   iEvent.getByToken(*(this -> _genJetCollectionTag), genJetCollectionHandle);
 
-  // I want to save for each event the highest momentum l1t(Muon/EGamma/Tau/Jet) for performance purposes
-  
-  if (this -> _l1tMuonCollectionTag)
-  {
-    // Muon veto. For muon matching
-    edm::Handle < std::vector< reco::GenParticle > > genParticleCollectionHandle;
-    iEvent.getByToken(*(this -> _genParticleCollectionTag), genParticleCollectionHandle);
-    bool hasMuons = false;
-    for (auto genParticleIterator = genParticleCollectionHandle -> begin(); genParticleIterator != genParticleCollectionHandle -> end(); genParticleIterator++ )
-    {
-      if (abs(genParticleIterator->pdgId()) == 13)
-        hasMuons = true;
-    }
-
-    if (!hasMuons)
-    {
-      edm::Handle < BXVector< l1t::Muon > > l1tMuonCollectionHandle;
-      iEvent.getByToken(*(this -> _l1tMuonCollectionTag), l1tMuonCollectionHandle);
-      const std::vector<std::tuple<const l1t::Muon*,const  reco::GenJet*, float, int> > 
-        l1tMuonGenJetPairs = 
-          this -> _matchParticleWithL1Object<>(genJetCollectionHandle, l1tMuonCollectionHandle, 5, true);
-      this -> _fillTreeWithMatchedPairs(*(this -> _l1tMuonGenJetTree), l1tMuonGenJetPairs);
-      float maxPt = 0;
-      bool save = false;
-      for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
-      {
-        if (l1tMuonIterator -> hwQual() < 8) continue;
-        if (l1tMuonIterator -> pt() > maxPt)
-        {
-          save = true;
-          maxPt = l1tMuonIterator -> pt();
-          this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
-          this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
-          this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
-          this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
-          this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
-        }
-      }
-      if (save) {
-        //std::cout << "I am saving a muon object w/ qual " << this -> _l1tObjectParticle.hwQual << std::endl;      
-        this -> _l1tLeadingMuonTree -> Fill();
-      }
-      
-      for (auto l1tMuonIterator = l1tMuonCollectionHandle -> begin(0); l1tMuonIterator != l1tMuonCollectionHandle -> end(0); l1tMuonIterator++ )
-      {
-        this -> _l1tObjectParticle.id = (l1tMuonIterator - l1tMuonCollectionHandle->begin(0));
-        this -> _l1tObjectParticle.pt = l1tMuonIterator -> pt();
-        this -> _l1tObjectParticle.eta = l1tMuonIterator -> eta();
-        this -> _l1tObjectParticle.phi = l1tMuonIterator -> phi();
-        this -> _l1tObjectParticle.hwQual = l1tMuonIterator -> hwQual();      
-        this -> _l1tMuonTree -> Fill();
-      }
-      
-    }
-  }
-  
   if (this -> _l1tJetCollectionTag)
   {
     edm::Handle < BXVector< l1t::Jet > > l1tJetCollectionHandle;
     iEvent.getByToken(*(this -> _l1tJetCollectionTag), l1tJetCollectionHandle);
     const auto l1tJetGenJetPairs = this -> _matchParticleWithL1Object<>(genJetCollectionHandle, l1tJetCollectionHandle, 1);
     this -> _fillTreeWithMatchedPairs(*(this -> _l1tJetGenJetTree), l1tJetGenJetPairs);
-    float maxPt = 0;
-    bool save = false;
-    for (auto l1tJetIterator = l1tJetCollectionHandle -> begin(0); l1tJetIterator != l1tJetCollectionHandle -> end(0); l1tJetIterator++ )
-    {
-      // Only barrel leading l1t jets
-      if ((l1tJetIterator->pt() > maxPt) && (l1tJetIterator->eta() < 1.44) && (l1tJetIterator->eta() > -1.44))
-      {
-        save = true;        
-        maxPt = l1tJetIterator -> pt();
-        this -> _l1tObjectParticle.hwQual = l1tJetIterator -> hwQual();      
-        this -> _l1tObjectParticle.id = (l1tJetIterator - l1tJetCollectionHandle->begin(0));
-        this -> _l1tObjectParticle.pt = l1tJetIterator -> pt();
-        this -> _l1tObjectParticle.eta = l1tJetIterator -> eta();
-        this -> _l1tObjectParticle.phi = l1tJetIterator -> phi();
-      }
-    }
-    if (save) this -> _l1tLeadingJetTree -> Fill();
     
     for (auto l1tJetIterator = l1tJetCollectionHandle -> begin(0); l1tJetIterator != l1tJetCollectionHandle -> end(0); l1tJetIterator++ )
     {
@@ -304,122 +227,14 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
     
   }
 
-//  if (this->_l1tCaloTowerCollectionTag)
-//  {
-//    edm::Handle<BXVector<l1t::CaloTower>> l1tCaloTowerCollectionHandle;
-//    iEvent.getByToken(*(this->_l1tCaloTowerCollectionTag), l1tCaloTowerCollectionHandle);
-//    auto l1tCaloTowerGenJetPairs = this->_matchGenJetWithL1Object<>(genJetCollectionHandle, l1tCaloTowerCollectionHandle);
-//    this->_fillTreeWithMatchedPairs(*(this->_l1tCaloTowerGenJetTree), l1tCaloTowerGenJetPairs);
-//    float maxPt = 0;
-//    bool save = false;
-//    for (auto l1tCaloTowerIterator = l1tCaloTowerCollectionHandle->begin(0); l1tCaloTowerIterator != l1tCaloTowerCollectionHandle->end(0); l1tCaloTowerIterator++)
-//    {
-//      if ((l1tCaloTowerIterator->pt() > maxPt) && (l1tCaloTowerIterator->eta() < 1.44) && (l1tCaloTowerIterator->eta() > -1.44))
-//      {
-//        save = true;
-//        maxPt = l1tCaloTowerIterator->pt();
-//        this->_l1tObjectParticle.hwQual = l1tCaloTowerIterator->hwQual();
-//        this->_l1tObjectParticle.id = (l1tCaloTowerIterator - l1tCaloTowerCollectionHandle->begin(0));
-//        this->_l1tObjectParticle.pt = l1tCaloTowerIterator->pt();
-//        this->_l1tObjectParticle.eta = l1tCaloTowerIterator->eta();
-//        this->_l1tObjectParticle.phi = l1tCaloTowerIterator->phi();
-//      }
-//    }
-//    if (save) this->_l1tLeadingCaloTowerTree->Fill();
-//
-//    for (auto l1tCaloTowerIterator = l1tCaloTowerCollectionHandle->begin(0); l1tCaloTowerIterator != l1tCaloTowerCollectionHandle->end(0); l1tCaloTowerIterator++)
-//    {
-//      this->_l1tObjectParticle.id = (l1tCaloTowerIterator - l1tCaloTowerCollectionHandle->begin(0));
-//      this->_l1tObjectParticle.pt = l1tCaloTowerIterator->pt();
-//      this->_l1tObjectParticle.eta = l1tCaloTowerIterator->eta();
-//      this->_l1tObjectParticle.phi = l1tCaloTowerIterator->phi();
-//      this->_l1tObjectParticle.hwQual = l1tCaloTowerIterator->hwQual();
-//      this->_l1tCaloTowerTree->Fill();
-//    }
-//  }
-
-  if (this -> _l1tEGammaCollectionTag)
-  {
-    edm::Handle < BXVector< l1t::EGamma > > l1tEGammaCollectionHandle;
-    iEvent.getByToken(*(this -> _l1tEGammaCollectionTag), l1tEGammaCollectionHandle);
-    const auto l1tEGammaGenJetPairs = this -> _matchParticleWithL1Object<>(genJetCollectionHandle, l1tEGammaCollectionHandle, 1);
-    this -> _fillTreeWithMatchedPairs(*(this -> _l1tEGammaGenJetTree), l1tEGammaGenJetPairs);
-    float maxPt = 0;
-    bool save = false;
-    for (auto l1tEGammaIterator = l1tEGammaCollectionHandle -> begin(0); l1tEGammaIterator != l1tEGammaCollectionHandle -> end(0); l1tEGammaIterator++ )
-    {
-      if (l1tEGammaIterator -> pt() > maxPt)
-      {
-        save = true;
-        maxPt = l1tEGammaIterator -> pt();
-        this -> _l1tObjectParticle.hwQual = l1tEGammaIterator -> hwQual();        
-        this -> _l1tObjectParticle.id = (l1tEGammaIterator - l1tEGammaCollectionHandle->begin(0));
-        this -> _l1tObjectParticle.pt = l1tEGammaIterator -> pt();
-        this -> _l1tObjectParticle.eta = l1tEGammaIterator -> eta();
-        this -> _l1tObjectParticle.phi = l1tEGammaIterator -> phi();
-      }
-    }
-    if (save) this -> _l1tLeadingEGammaTree -> Fill();
-    
-    for (auto l1tEGammaIterator = l1tEGammaCollectionHandle -> begin(0); l1tEGammaIterator != l1tEGammaCollectionHandle -> end(0); l1tEGammaIterator++ )
-    {
-      this -> _l1tObjectParticle.id = (l1tEGammaIterator - l1tEGammaCollectionHandle->begin(0));
-      this -> _l1tObjectParticle.pt = l1tEGammaIterator -> pt();
-      this -> _l1tObjectParticle.eta = l1tEGammaIterator -> eta();
-      this -> _l1tObjectParticle.phi = l1tEGammaIterator -> phi();
-      this -> _l1tObjectParticle.hwQual = l1tEGammaIterator -> hwQual();                  
-      this -> _l1tEGammaTree -> Fill();
-    }
-    
-  }
-  
-  if (this -> _l1tTauCollectionTag)
-  {
-    edm::Handle < BXVector< l1t::Tau > > l1tTauCollectionHandle;
-    iEvent.getByToken(*(this -> _l1tTauCollectionTag), l1tTauCollectionHandle);
-    const auto l1tTauGenJetPairs = this -> _matchParticleWithL1Object<>(genJetCollectionHandle, l1tTauCollectionHandle, 1);
-    this -> _fillTreeWithMatchedPairs(*(this -> _l1tTauGenJetTree), l1tTauGenJetPairs);
-    float maxPt = 0;
-    bool save = false;
-    for (auto l1tTauIterator = l1tTauCollectionHandle -> begin(0); l1tTauIterator != l1tTauCollectionHandle -> end(0); l1tTauIterator++ )
-    {
-      if (l1tTauIterator -> pt() > maxPt)
-      {
-        save = true;
-        maxPt = l1tTauIterator -> pt();
-        this -> _l1tObjectParticle.id = (l1tTauIterator - l1tTauCollectionHandle->begin(0));
-        this -> _l1tObjectParticle.pt = l1tTauIterator -> pt();
-        this -> _l1tObjectParticle.eta = l1tTauIterator -> eta();
-        this -> _l1tObjectParticle.hwQual = l1tTauIterator -> hwQual();                        
-        this -> _l1tObjectParticle.phi = l1tTauIterator -> phi();
-      }
-    }
-    if (save) this -> _l1tLeadingTauTree -> Fill();
-    
-    for (auto l1tTauIterator = l1tTauCollectionHandle -> begin(0); l1tTauIterator != l1tTauCollectionHandle -> end(0); l1tTauIterator++ )
-    {
-      this -> _l1tObjectParticle.id = (l1tTauIterator - l1tTauCollectionHandle->begin(0));
-      this -> _l1tObjectParticle.pt = l1tTauIterator -> pt();
-      this -> _l1tObjectParticle.eta = l1tTauIterator -> eta();
-      this -> _l1tObjectParticle.hwQual = l1tTauIterator -> hwQual();                        
-      this -> _l1tObjectParticle.phi = l1tTauIterator -> phi();
-      this -> _l1tTauTree -> Fill();
-    }
-    
-  }
-
-  // Saving every genJet to get the misidentification probability
-
   for (auto genJetIterator = genJetCollectionHandle -> begin(); genJetIterator != genJetCollectionHandle -> end(); genJetIterator++ )
   {
     this -> _genJetParticle.id = (genJetIterator - genJetCollectionHandle->begin());
     this -> _genJetParticle.pt = genJetIterator -> pt();
-    //std::cout << "Jet pt " << genJetIterator -> pt() << std::endl;
     this -> _genJetParticle.eta = genJetIterator -> eta();
     this -> _genJetParticle.phi = genJetIterator -> phi();
     this -> _genJetTree -> Fill();
   }
-
 
 }
 
