@@ -108,33 +108,12 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
       bool = true
     );
 
-    edm::EDGetTokenT<std::vector<reco::GenParticle>> *_genParticleCollectionTag;
     edm::EDGetTokenT< std::vector< reco::GenJet > > *_genJetCollectionTag;
-    edm::EDGetTokenT< BXVector< l1t::Muon > > *_l1tMuonCollectionTag;
     edm::EDGetTokenT< BXVector< l1t::Jet > > *_l1tJetCollectionTag;
-    edm::EDGetTokenT< BXVector< l1t::CaloTower > > *_l1tCaloTowerCollectionTag;
-    //!TODO: It should splitted in two different objects in the Stage-2
-    edm::EDGetTokenT< BXVector< l1t::EGamma > > *_l1tEGammaCollectionTag;
     //!TODO: Like this
-    //edm::EDGetTokenT< BXVector< l1t::Electron > > _l1tElectronCollectionTag;
-    //edm::EDGetTokenT< BXVector< l1t::Gamma > > _l1tGammaCollectionTag;
-    edm::EDGetTokenT< BXVector< l1t::Tau > > *_l1tTauCollectionTag;
 
-    TTree * _l1tMuonGenJetTree;
-    TTree * _l1tMuonTree;
-    TTree * _l1tLeadingMuonTree;
     TTree * _l1tJetGenJetTree;
     TTree * _l1tJetTree;
-    TTree * _l1tLeadingJetTree;
-    TTree * _l1tCaloTowerGenJetTree;
-    TTree * _l1tCaloTowerTree;
-    TTree * _l1tLeadingCaloTowerTree;
-    TTree * _l1tEGammaGenJetTree;
-    TTree * _l1tEGammaTree;
-    TTree * _l1tLeadingEGammaTree;
-    TTree * _l1tTauGenJetTree;
-    TTree * _l1tTauTree;
-    TTree * _l1tLeadingTauTree;
     TTree * _genJetTree;
 
     Particle _genJetParticle;
@@ -149,34 +128,8 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _getTokens(iConfig);
   usesResource("TFileService");
   edm::Service<TFileService> fs;
-  this -> _l1tMuonGenJetTree = fs -> make<TTree>("matchedL1TMuonGenJetTree", "TTree with generator-level jet / L1T Muon information");
   this -> _l1tJetGenJetTree = fs -> make<TTree>("matchedL1TJetGenJetTree", "TTree with generator-level jet / L1T Jet information");
-  this -> _l1tEGammaGenJetTree = fs -> make<TTree>("matchedL1TEGammaGenJetTree", "TTree with generator-level jet / L1T EGamma information");
-  this -> _l1tTauGenJetTree = fs -> make<TTree>("matchedL1TTauGenJetTree", "TTree with generator-level jet / L1T Tau information");
-  this -> _l1tMuonTree = fs -> make<TTree>("l1tMuonTree", "TTree with generator-level jet / L1T Muon information");
-  this -> _l1tLeadingMuonTree = fs -> make<TTree>("l1tLeadingMuonTree", "TTree with generator-level jet / L1T Muon information");
-  this -> _l1tJetTree = fs -> make<TTree>("l1tJetTree", "TTree with generator-level jet / L1T Jet information");
-  this -> _l1tLeadingJetTree = fs -> make<TTree>("l1tLeadingJetTree", "TTree with generator-level jet / L1T Jet information");
-  this -> _l1tCaloTowerGenJetTree = fs -> make<TTree>("matchedL1TCaloTowerGenJetTree", "TTree with generator-level jet / L1T Calo Tower information");
-  this -> _l1tCaloTowerTree = fs -> make<TTree>("l1tCaloTowerTree", "TTree with l1t calo tower info");
-  this -> _l1tLeadingCaloTowerTree = fs -> make<TTree>("l1tLeadingCaloTowerTree", "TTree with l1t calo tower info");
-  this -> _l1tEGammaTree = fs -> make<TTree>("l1tEGammaTree", "TTree with generator-level jet / L1T EGamma information");
-  this -> _l1tLeadingEGammaTree = fs -> make<TTree>("l1tLeadingEGammaTree", "TTree with generator-level jet / L1T EGamma information");
-  this -> _l1tTauTree = fs -> make<TTree>("l1tTauTree", "TTree with generator-level jet / L1T Tau information");
-  this -> _l1tLeadingTauTree = fs -> make<TTree>("l1tLeadingTauTree", "TTree with generator-level jet / L1T Tau information");
   this -> _genJetTree = fs -> make<TTree>("genJetTree", "TTree with generator-level jet information");
-
-  this -> _l1tMuonGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
-  this -> _l1tMuonGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
-  this -> _l1tMuonGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
-  this -> _l1tMuonGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
-  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_id", &(this -> _l1tObjectParticle.id), "l1tMuon_id/i");
-  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_pt", &(this -> _l1tObjectParticle.pt), "l1tMuon_pt/F");
-  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectParticle.eta), "l1tMuon_eta/F");
-  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectParticle.phi), "l1tMuon_phi/F");
-  this -> _l1tMuonGenJetTree -> Branch("l1tMuon_qual", &(this -> _l1tObjectParticle.hwQual), "l1tMuon_qual/i");
-  this -> _l1tMuonGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
-  this -> _l1tMuonGenJetTree -> Branch("matchingQuality", &(this -> _matchingQuality), "matchingQuality/i");
 
   this -> _l1tJetGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
   this -> _l1tJetGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
@@ -190,66 +143,11 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tJetGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
   this -> _l1tJetGenJetTree -> Branch("matchingQuality", &(this -> _matchingQuality), "matchingQuality/i");
 
-  this -> _l1tEGammaGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
-  this -> _l1tEGammaGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
-  this -> _l1tEGammaGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
-  this -> _l1tEGammaGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
-  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_id", &(this -> _l1tObjectParticle.id), "l1tEGamma_id/i");
-  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_pt", &(this -> _l1tObjectParticle.pt), "l1tEGamma_pt/F");
-  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_eta", &(this -> _l1tObjectParticle.eta), "l1tEGamma_eta/F");
-  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_phi", &(this -> _l1tObjectParticle.phi), "l1tEGamma_phi/F");
-  this -> _l1tEGammaGenJetTree -> Branch("l1tEGamma_qual", &(this -> _l1tObjectParticle.hwQual), "l1tEGamma_qual/i");
-  this -> _l1tEGammaGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
-  this -> _l1tEGammaGenJetTree -> Branch("matchingQuality", &(this -> _matchingQuality), "matchingQuality/i");
-
-  this -> _l1tTauGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
-  this -> _l1tTauGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
-  this -> _l1tTauGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
-  this -> _l1tTauGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
-  this -> _l1tTauGenJetTree -> Branch("l1tTau_id", &(this -> _l1tObjectParticle.id), "l1tTau_id/i");
-  this -> _l1tTauGenJetTree -> Branch("l1tTau_pt", &(this -> _l1tObjectParticle.pt), "l1tTau_pt/F");
-  this -> _l1tTauGenJetTree -> Branch("l1tTau_eta", &(this -> _l1tObjectParticle.eta), "l1tTau_eta/F");
-  this -> _l1tTauGenJetTree -> Branch("l1tTau_phi", &(this -> _l1tObjectParticle.phi), "l1tTau_phi/F");
-  this -> _l1tTauGenJetTree -> Branch("l1tTau_qual", &(this -> _l1tObjectParticle.hwQual), "l1tTau_qual/i");
-  this -> _l1tTauGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
-  this -> _l1tTauGenJetTree -> Branch("matchingQuality", &(this -> _matchingQuality), "matchingQuality/i");
-  
-  this -> _l1tCaloTowerGenJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
-  this -> _l1tCaloTowerGenJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
-  this -> _l1tCaloTowerGenJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
-  this -> _l1tCaloTowerGenJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
-  this -> _l1tCaloTowerGenJetTree -> Branch("l1tCaloTower_id", &(this -> _l1tObjectParticle.id), "l1tCaloTower_id/i");
-  this -> _l1tCaloTowerGenJetTree -> Branch("l1tCaloTower_pt", &(this -> _l1tObjectParticle.pt), "l1tCaloTower_pt/F");
-  this -> _l1tCaloTowerGenJetTree -> Branch("l1tCaloTower_eta", &(this -> _l1tObjectParticle.eta), "l1tCaloTower_eta/F");
-  this -> _l1tCaloTowerGenJetTree -> Branch("l1tCaloTower_phi", &(this -> _l1tObjectParticle.phi), "l1tCaloTower_phi/F");
-  this -> _l1tCaloTowerGenJetTree -> Branch("l1tCaloTower_qual", &(this -> _l1tObjectParticle.hwQual), "l1tCaloTower_qual/i");
-  this -> _l1tCaloTowerGenJetTree -> Branch("deltaR2", &(this -> _deltaR2), "deltaR2/F");
-  this -> _l1tCaloTowerGenJetTree -> Branch("matchingQuality", &(this -> _matchingQuality), "matchingQuality/i");
-
   //Used to detemine the prob that a jet will be misidentified binned in pt
   this -> _genJetTree -> Branch("genJet_id", &(this -> _genJetParticle.id), "genJet_id/i");
   this -> _genJetTree -> Branch("genJet_pt", &(this -> _genJetParticle.pt), "genJet_pt/F");
   this -> _genJetTree -> Branch("genJet_eta", &(this -> _genJetParticle.eta), "genJet_eta/F");
   this -> _genJetTree -> Branch("genJet_phi", &(this -> _genJetParticle.phi), "genJet_phi/F");
-
-  this -> _l1tEGammaTree -> Branch("l1tEGamma_id", &(this -> _l1tObjectParticle.id), "l1tEGamma_id/i");
-  this -> _l1tEGammaTree -> Branch("l1tEGamma_pt", &(this -> _l1tObjectParticle.pt), "l1tEGamma_pt/F");
-  this -> _l1tEGammaTree -> Branch("l1tEGamma_eta", &(this -> _l1tObjectParticle.eta), "l1tEGamma_eta/F");
-  this -> _l1tEGammaTree -> Branch("l1tEGamma_phi", &(this -> _l1tObjectParticle.phi), "l1tEGamma_phi/F");
-  this -> _l1tEGammaTree -> Branch("l1tEGamma_qual", &(this -> _l1tObjectParticle.hwQual), "l1tEGamma_qual/i");
-
-  this -> _l1tTauTree -> Branch("l1tTau_id", &(this -> _l1tObjectParticle.id), "l1tTau_id/i");
-  this -> _l1tTauTree -> Branch("l1tTau_pt", &(this -> _l1tObjectParticle.pt), "l1tTau_pt/F");
-  this -> _l1tTauTree -> Branch("l1tTau_eta", &(this -> _l1tObjectParticle.eta), "l1tTau_eta/F");
-  this -> _l1tTauTree -> Branch("l1tTau_phi", &(this -> _l1tObjectParticle.phi), "l1tTau_phi/F");
-  this -> _l1tTauTree -> Branch("l1tTau_qual", &(this -> _l1tObjectParticle.hwQual), "l1tTau_qual/i");
-
-  this -> _l1tMuonTree -> Branch("l1tMuon_id", &(this -> _l1tObjectParticle.id), "l1tMuon_id/i");
-  this -> _l1tMuonTree -> Branch("l1tMuon_pt", &(this -> _l1tObjectParticle.pt), "l1tMuon_pt/F");
-  this -> _l1tMuonTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectParticle.eta), "l1tMuon_eta/F");
-  this -> _l1tMuonTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectParticle.phi), "l1tMuon_phi/F");
-  this -> _l1tMuonTree -> Branch("l1tMuon_qual", &(this -> _l1tObjectParticle.hwQual), "l1tMuon_qual/i");
-  
 
   this -> _l1tJetTree -> Branch("l1tJet_id", &(this -> _l1tObjectParticle.id), "l1tJet_id/i");
   this -> _l1tJetTree -> Branch("l1tJet_pt", &(this -> _l1tObjectParticle.pt), "l1tJet_pt/F");
@@ -257,67 +155,22 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
   this -> _l1tJetTree -> Branch("l1tJet_phi", &(this -> _l1tObjectParticle.phi), "l1tJet_phi/F");
   this -> _l1tJetTree -> Branch("l1tJet_qual", &(this -> _l1tObjectParticle.hwQual), "l1tJet_qual/i");
 
-  this -> _l1tCaloTowerTree -> Branch("l1tCaloTower_id", &(this -> _l1tObjectParticle.id), "l1tCaloTower_id/i");
-  this -> _l1tCaloTowerTree -> Branch("l1tCaloTower_pt", &(this -> _l1tObjectParticle.pt), "l1tCaloTower_pt/F");
-  this -> _l1tCaloTowerTree -> Branch("l1tCaloTower_eta", &(this -> _l1tObjectParticle.eta), "l1tCaloTower_eta/F");
-  this -> _l1tCaloTowerTree -> Branch("l1tCaloTower_phi", &(this -> _l1tObjectParticle.phi), "l1tCaloTower_phi/F");
-  this -> _l1tCaloTowerTree -> Branch("l1tCaloTower_qual", &(this -> _l1tObjectParticle.hwQual), "l1tCaloTower_qual/i");
-
-  this -> _l1tLeadingEGammaTree -> Branch("l1tEGamma_id", &(this -> _l1tObjectParticle.id), "l1tEGamma_id/i");
-  this -> _l1tLeadingEGammaTree -> Branch("l1tEGamma_pt", &(this -> _l1tObjectParticle.pt), "l1tEGamma_pt/F");
-  this -> _l1tLeadingEGammaTree -> Branch("l1tEGamma_eta", &(this -> _l1tObjectParticle.eta), "l1tEGamma_eta/F");
-  this -> _l1tLeadingEGammaTree -> Branch("l1tEGamma_phi", &(this -> _l1tObjectParticle.phi), "l1tEGamma_phi/F");
-  this -> _l1tLeadingEGammaTree -> Branch("l1tEGamma_qual", &(this -> _l1tObjectParticle.hwQual), "l1tEGamma_qual/i");
-
-  this -> _l1tLeadingTauTree -> Branch("l1tTau_id", &(this -> _l1tObjectParticle.id), "l1tTau_id/i");
-  this -> _l1tLeadingTauTree -> Branch("l1tTau_pt", &(this -> _l1tObjectParticle.pt), "l1tTau_pt/F");
-  this -> _l1tLeadingTauTree -> Branch("l1tTau_eta", &(this -> _l1tObjectParticle.eta), "l1tTau_eta/F");
-  this -> _l1tLeadingTauTree -> Branch("l1tTau_phi", &(this -> _l1tObjectParticle.phi), "l1tTau_phi/F");
-  this -> _l1tLeadingTauTree -> Branch("l1tTau_qual", &(this -> _l1tObjectParticle.hwQual), "l1tTau_qual/i");
-
-  this -> _l1tLeadingMuonTree -> Branch("l1tMuon_id", &(this -> _l1tObjectParticle.id), "l1tMuon_id/i");
-  this -> _l1tLeadingMuonTree -> Branch("l1tMuon_pt", &(this -> _l1tObjectParticle.pt), "l1tMuon_pt/F");
-  this -> _l1tLeadingMuonTree -> Branch("l1tMuon_eta", &(this -> _l1tObjectParticle.eta), "l1tMuon_eta/F");
-  this -> _l1tLeadingMuonTree -> Branch("l1tMuon_phi", &(this -> _l1tObjectParticle.phi), "l1tMuon_phi/F");
-  this -> _l1tLeadingMuonTree -> Branch("l1tMuon_qual", &(this -> _l1tObjectParticle.hwQual), "l1tMuon_qual/i");  
-
-  this -> _l1tLeadingJetTree -> Branch("l1tJet_id", &(this -> _l1tObjectParticle.id), "l1tJet_id/i");
-  this -> _l1tLeadingJetTree -> Branch("l1tJet_pt", &(this -> _l1tObjectParticle.pt), "l1tJet_pt/F");
-  this -> _l1tLeadingJetTree -> Branch("l1tJet_eta", &(this -> _l1tObjectParticle.eta), "l1tJet_eta/F");
-  this -> _l1tLeadingJetTree -> Branch("l1tJet_phi", &(this -> _l1tObjectParticle.phi), "l1tJet_phi/F");
-  this -> _l1tLeadingJetTree -> Branch("l1tJet_qual", &(this -> _l1tObjectParticle.hwQual), "l1tJet_qual/i");
-
-  this -> _l1tLeadingCaloTowerTree -> Branch("l1tCaloTower_id", &(this -> _l1tObjectParticle.id), "l1tCaloTower_id/i");
-  this -> _l1tLeadingCaloTowerTree -> Branch("l1tCaloTower_pt", &(this -> _l1tObjectParticle.pt), "l1tCaloTower_pt/F");
-  this -> _l1tLeadingCaloTowerTree -> Branch("l1tCaloTower_eta", &(this -> _l1tObjectParticle.eta), "l1tCaloTower_eta/F");
-  this -> _l1tLeadingCaloTowerTree -> Branch("l1tCaloTower_phi", &(this -> _l1tObjectParticle.phi), "l1tCaloTower_phi/F");
-  this -> _l1tLeadingCaloTowerTree -> Branch("l1tCaloTower_qual", &(this -> _l1tObjectParticle.hwQual), "l1tCaloTower_qual/i");
 }
 
 void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
 {
   
-  this -> _genJetCollectionTag = new edm::EDGetTokenT< std::vector< reco::GenJet > >(consumes< std::vector< reco::GenJet > > (iConfig.getParameter< edm::InputTag >("genJetCollectionTag")));
   // Taking the tag of the various L1T object collections
   // If a parameter is omitted that object will not be studied
   try
   {
-    this -> _genParticleCollectionTag = new edm::EDGetTokenT< std::vector< reco::GenParticle > >(consumes< std::vector< reco::GenParticle > > (iConfig.getParameter< edm::InputTag >("genParticleCollectionTag")));
+    this -> _genJetCollectionTag = new edm::EDGetTokenT< std::vector< reco::GenJet > >(consumes< std::vector< reco::GenJet > > (iConfig.getParameter< edm::InputTag >("genJetCollectionTag")));
   } catch (std::exception const & ex) 
   {
-    std::cerr << ">>> genParticleCollectionTag not found." << std::endl;
-    this -> _genParticleCollectionTag = NULL;
+    std::cerr << ">>> genJetCollectionTag not found." << std::endl;
+    this -> _genJetCollectionTag = NULL;
   }
 
-  try
-  {
-    this -> _l1tMuonCollectionTag = new edm::EDGetTokenT< BXVector < l1t::Muon > >(consumes< BXVector< l1t::Muon > > (iConfig.getParameter< edm::InputTag >("l1tMuonCollectionTag")));
-  } catch (std::exception const & ex) 
-  {
-    std::cerr << ">>> l1tMuonCollectionTag not found, proceeding without computing the corresponding convolution." << std::endl;
-    this -> _l1tMuonCollectionTag = NULL;
-  }
-  
   try
   {
     this -> _l1tJetCollectionTag = new edm::EDGetTokenT< BXVector < l1t::Jet > >(consumes< BXVector< l1t::Jet > > (iConfig.getParameter< edm::InputTag >("l1tJetCollectionTag")));
@@ -325,33 +178,6 @@ void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
   {
     std::cerr << ">>> l1tJetCollectionTag not found, proceeding without computing the corresponding convolution." << std::endl;
     this -> _l1tJetCollectionTag = NULL;
-  }
-  
-  try
-  {
-    this -> _l1tEGammaCollectionTag = new edm::EDGetTokenT< BXVector < l1t::EGamma > >(consumes< BXVector< l1t::EGamma > > (iConfig.getParameter< edm::InputTag >("l1tEGammaCollectionTag")));
-  } catch (std::exception const & ex) 
-  {
-    std::cerr << ">>> l1tEGammaCollectionTag not found, proceeding without computing the corresponding convolution." << std::endl;
-    this -> _l1tEGammaCollectionTag = NULL;
-  }
-  
-  try
-  {
-    this -> _l1tTauCollectionTag = new edm::EDGetTokenT< BXVector < l1t::Tau > >(consumes< BXVector< l1t::Tau > > (iConfig.getParameter< edm::InputTag >("l1tTauCollectionTag")));
-  } catch (std::exception const & ex) 
-  {
-    std::cerr << ">>> l1tTauCollectionTag not found, proceeding without computing the corresponding convolution." << std::endl;
-    this -> _l1tTauCollectionTag = NULL;
-  }
-  
-  try
-  {
-    this -> _l1tCaloTowerCollectionTag = new edm::EDGetTokenT< BXVector < l1t::CaloTower > >(consumes< BXVector< l1t::CaloTower > > (iConfig.getParameter< edm::InputTag >("l1tCaloTowerCollectionTag")));
-  } catch (std::exception const & ex) 
-  {
-    std::cerr << ">>> l1tCaloTowerCollectionTag not found, proceeding without computing the corresponding convolution." << std::endl;
-    this -> _l1tCaloTowerCollectionTag = NULL;
   }
   
   return;
