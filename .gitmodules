@@ -1,0 +1,3 @@
+[submodule "FastPUPPI"]
+	path = FastPUPPI
+	url = git@github.com:p2l1pfp/FastPUPPI.git
