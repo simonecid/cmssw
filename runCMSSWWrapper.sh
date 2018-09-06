@@ -52,11 +52,13 @@ scramv1 b ProjectRename
 #git cms-merge-topic simonecid:${BRANCH}
 scram b -j4
 
-cmsRun CMSSWJobDriver.py blockIndex=${processId} numberOfBlocks=${numberOfJobs} outputFile=${OUTPUT_FILENAME} cfgFile=${inputFile} inputFiles=${SAMPLE_FILE}
+mkdir __output
+
+cmsRun CMSSWJobDriver.py blockIndex=${processId} numberOfBlocks=${numberOfJobs} outputFile=__output/${OUTPUT_FILENAME} cfgFile=${inputFile} inputFiles=${SAMPLE_FILE}
 
 echo "Will save on" /user/sb17498/CMS_Phase_2/jetMETStudies/${HDFS_DEST}
 
 /usr/bin/hdfs dfs -mkdir -p /user/sb17498/CMS_Phase_2/jetMETStudies/${HDFS_DEST}
-/usr/bin/hdfs dfs -moveFromLocal ${OUTPUT_FILENAME} /user/sb17498/CMS_Phase_2/jetMETStudies/${HDFS_DEST}
+/usr/bin/hdfs dfs -moveFromLocal __output/* /user/sb17498/CMS_Phase_2/jetMETStudies/${HDFS_DEST}
 
 set +o xtrace
