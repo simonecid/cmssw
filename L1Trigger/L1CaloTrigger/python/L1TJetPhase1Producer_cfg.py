@@ -16,7 +16,7 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 process.source = process.source = cms.Source("PoolSource",
-  fileNames = cms.untracked.vstring('file:/six/sb17498/CMSSW_10_1_5/src/TTBar_100events.root')
+  fileNames = cms.untracked.vstring('file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD_old/GeneratePfClustersAndCandidatesFromQCD_3714683.0.root')
 )
 
 process.TFileService = cms.Service('TFileService', fileName = cms.string("Histograms.root"))
@@ -70,27 +70,27 @@ process.PrintMomentum = cms.EDAnalyzer('PrintMomentum',
   phase1L1TJetFromPfClustersTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfClusters", "L1TJetPhase1Producer"),
 )
 
-process.MatchAK4GenJetWithPhase1L1TJetFromPfClusters = cms.EDAnalyzer('MatchGenJetWithL1Jet',
+process.MatchAK4GenJetWithPhase1L1TJetFromPfClusters = cms.EDAnalyzer('MatchGenJetToL1Jet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
   l1tJetCollectionTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfClusters", "L1TJetPhase1Producer"),
 )
 
-process.MatchAK4GenJetWithPhase1L1TJetFromPfCandidates = cms.EDAnalyzer('MatchGenJetWithL1Jet',
+process.MatchAK4GenJetWithPhase1L1TJetFromPfCandidates = cms.EDAnalyzer('MatchGenJetToL1Jet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
   l1tJetCollectionTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfCandidates", "L1TJetPhase1Producer"),
 )
 
-process.MatchAK4JetWithPhase1L1TJetPfClusters = cms.EDAnalyzer('MatchGenJetWithL1Jet',
+process.MatchAK4GenJetWithAK4JetFromPfClusters = cms.EDAnalyzer('MatchGenJetToL1Jet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
   l1tJetCollectionTag = cms.InputTag("ConvertGenJetToL1TJet", "ak4L1TJetFromPfClusters", "L1TJetPhase1Producer"),
 )
 
-process.MatchAK4JetWithPhase1L1TJetPfCandidates = cms.EDAnalyzer('MatchGenJetWithL1Jet',
+process.MatchAK4GenJetWithAK4JetFromPfCandidates = cms.EDAnalyzer('MatchGenJetToL1Jet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
   l1tJetCollectionTag = cms.InputTag("ConvertGenJetToL1TJet", "ak4L1TJetFromPfCandidates", "L1TJetPhase1Producer"),
 )
 
-#process.p = cms.Path(process.ak4JetFromPfClusters + process.ak4JetFromPfCandidates + process.L1TJetPhase1Producer + process.MatchGenJetWithL1Jet)
+#process.p = cms.Path(process.ak4JetFromPfClusters + process.ak4JetFromPfCandidates + process.L1TJetPhase1Producer + process.MatchGenJetToL1Jet)
 process.p = cms.Path(
   process.ak4GenJetFromPfClusters +
   process.ak4GenJetFromPfCandidates +
@@ -98,8 +98,8 @@ process.p = cms.Path(
   process.L1TJetPhase1Producer +
   process.MatchAK4GenJetWithPhase1L1TJetFromPfClusters +
   process.MatchAK4GenJetWithPhase1L1TJetFromPfCandidates +
-  process.MatchAK4JetWithPhase1L1TJetPfClusters +
-  process.MatchAK4JetWithPhase1L1TJetPfCandidates
+  process.MatchAK4GenJetWithAK4JetFromPfClusters +
+  process.MatchAK4GenJetWithAK4JetFromPfCandidates
 
 )
 #process.p = cms.Path(process.FastjetJetProducer + process.L1TJetPhase1Producer + process.PrintMomentum)
