@@ -13,7 +13,6 @@ Description: Produces jets with sliding window algorithm using pfcluster and pfc
 // Created: Mon Jul 02 2018
 //
 
-
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/one/EDProducer.h"
@@ -33,6 +32,9 @@ Description: Produces jets with sliding window algorithm using pfcluster and pfc
 #include "TH2F.h"
 
 #include <csignal>
+
+//UNCOMMENT TO CREATE DEBUG HISTO
+//#define DEBUG
 
 //class L1TJetPhase1Producer : public edm::EDProducer {
 class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResources> {
@@ -89,8 +91,12 @@ L1TJetPhase1Producer::L1TJetPhase1Producer(const edm::ParameterSet& iConfig)
   try
   {
     this -> _pfCandidateCollectionTag = new edm::EDGetTokenT< std::vector<l1t::PFCandidate> >(consumes< std::vector<l1t::PFCandidate> > (iConfig.getParameter< edm::InputTag >("pfCandidateCollectionTag")));
-    //this -> _caloGridPfCandidate = new TH2F("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    #ifndef DEBUG
+    this -> _caloGridPfCandidate = new TH2F("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    #endif
+    #ifdef DEBUG
     this -> _caloGridPfCandidate = fs -> make<TH2F>("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    #endif
     this -> _caloGridPfCandidate -> GetXaxis() -> SetTitle("#eta");
     this -> _caloGridPfCandidate -> GetYaxis() -> SetTitle("#phi");
     produces<BXVector<l1t::Jet> >( "Phase1L1TJetFromPfCandidates" ).setBranchAlias("Phase1L1TJetFromPfCandidates");
@@ -104,8 +110,12 @@ L1TJetPhase1Producer::L1TJetPhase1Producer(const edm::ParameterSet& iConfig)
   try
   {
     this -> _pfClusterCollectionTag = new edm::EDGetTokenT< std::vector<l1t::PFCluster> >(consumes< std::vector<l1t::PFCluster> > (iConfig.getParameter< edm::InputTag >("pfClusterCollectionTag")));
-    //this -> _caloGridPfCluster = new TH2F("caloGridPfCluster", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    #ifndef DEBUG
+    this -> _caloGridPfCluster = new TH2F("caloGridPfCluster", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    #endif
+    #ifdef DEBUG
     this -> _caloGridPfCluster = fs -> make<TH2F>("caloGridPfCluster", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+    #endif
     this -> _caloGridPfCluster -> GetXaxis() -> SetTitle("#eta");
     this -> _caloGridPfCluster -> GetYaxis() -> SetTitle("#phi");
     produces<BXVector<l1t::Jet> >( "Phase1L1TJetFromPfClusters" ).setBranchAlias("Phase1L1TJetFromPfClusters");
@@ -122,8 +132,10 @@ L1TJetPhase1Producer::~L1TJetPhase1Producer()
 {
   if (this -> _pfCandidateCollectionTag) delete this -> _pfCandidateCollectionTag;
   if (this -> _pfClusterCollectionTag) delete this -> _pfClusterCollectionTag;
-  //if (this -> _caloGridPfCandidate) delete this -> _caloGridPfCandidate;
-  //if (this -> _caloGridPfCluster) delete this -> _caloGridPfCluster;
+  #ifndef DEBUG
+  if (this -> _caloGridPfCandidate) delete this -> _caloGridPfCandidate;
+  if (this -> _caloGridPfCluster) delete this -> _caloGridPfCluster;
+  #endif
 }
 
 float L1TJetPhase1Producer::_getTowerEnergy(const TH2F & caloGrid, int iEta, int iPhi)
