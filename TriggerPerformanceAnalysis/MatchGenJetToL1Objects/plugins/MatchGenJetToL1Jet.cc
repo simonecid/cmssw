@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    L1TJetConvolutionCurves/MatchGenJetWithL1Objects
-// Class:      MatchGenJetWithL1Objects
+// Package:    L1TJetConvolutionCurves/MatchGenJetToL1Jet
+// Class:      MatchGenJetToL1Jet
 // 
-/**\class MatchGenJetWithL1Objects MatchGenJetWithL1Objects.cc L1TJetConvolutionCurves/MatchGenJetWithL1Objects/plugins/MatchGenJetWithL1Objects.cc
+/**\class MatchGenJetToL1Jet MatchGenJetToL1Jet.cc L1TJetConvolutionCurves/MatchGenJetToL1Jet/plugins/MatchGenJetToL1Jet.cc
  Description: Matches a gen jet with a L1T object and creates a tree
  Implementation:
     Receives tags of the various L1T objects
@@ -62,10 +62,10 @@ struct TriggerObject {
   int hwQual;
 };
 
-class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedResources> {
+class MatchGenJetToL1Jet : public edm::one::EDAnalyzer<edm::one::SharedResources> {
   public:
-    explicit MatchGenJetWithL1Objects(const edm::ParameterSet&);
-    ~MatchGenJetWithL1Objects();
+    explicit MatchGenJetToL1Jet(const edm::ParameterSet&);
+    ~MatchGenJetToL1Jet();
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
@@ -121,7 +121,7 @@ class MatchGenJetWithL1Objects : public edm::one::EDAnalyzer<edm::one::SharedRes
     int _matchingQuality;
 };
 
-MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iConfig)
+MatchGenJetToL1Jet::MatchGenJetToL1Jet(const edm::ParameterSet& iConfig)
 {  
   this -> _getTokens(iConfig);
   usesResource("TFileService");
@@ -163,7 +163,7 @@ MatchGenJetWithL1Objects::MatchGenJetWithL1Objects(const edm::ParameterSet& iCon
 
 }
 
-void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
+void MatchGenJetToL1Jet::_getTokens(const edm::ParameterSet& iConfig)
 {
   
   this -> _genJetCollectionTag = new edm::EDGetTokenT< std::vector< reco::GenJet > >(consumes< std::vector< reco::GenJet > > (iConfig.getParameter< edm::InputTag >("genJetCollectionTag")));
@@ -180,13 +180,13 @@ void MatchGenJetWithL1Objects::_getTokens(const edm::ParameterSet& iConfig)
   return;
 }
 
-void MatchGenJetWithL1Objects::_freeTokens()
+void MatchGenJetToL1Jet::_freeTokens()
 {
   if (this -> _genJetCollectionTag) delete this -> _genJetCollectionTag;
   if (this -> _l1tJetCollectionTag) delete this -> _l1tJetCollectionTag;
 }
 
-MatchGenJetWithL1Objects::~MatchGenJetWithL1Objects()
+MatchGenJetToL1Jet::~MatchGenJetToL1Jet()
 {
   this -> _freeTokens();
 }
@@ -198,7 +198,7 @@ MatchGenJetWithL1Objects::~MatchGenJetWithL1Objects()
 
 // ------------ method called for each event  ------------
 void
-MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+MatchGenJetToL1Jet::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   //Retrieving gen and l1t stuff
   edm::Handle < std::vector< reco::GenJet > > genJetCollectionHandle;
@@ -258,7 +258,7 @@ MatchGenJetWithL1Objects::analyze(const edm::Event& iEvent, const edm::EventSetu
 
 template<class TParticle, class TTrigger>
 void
-MatchGenJetWithL1Objects::_fillTreeWithMatchedPairs
+MatchGenJetToL1Jet::_fillTreeWithMatchedPairs
 (
   TTree & aTree,
   const std::vector < std::tuple <const TTrigger*, const TParticle*, float, int > > & matchedL1TObjectJetPairs
@@ -289,7 +289,7 @@ MatchGenJetWithL1Objects::_fillTreeWithMatchedPairs
 
 template <class TParticle, class TTrigger> // <3
 const std::vector <std::tuple<const TTrigger*, const TParticle*, float, int> > 
-MatchGenJetWithL1Objects::_matchParticleWithL1Object
+MatchGenJetToL1Jet::_matchParticleWithL1Object
 (
   const edm::Handle<std::vector<TParticle>>& particleCollectionHandle,
   const edm::Handle<BXVector<TTrigger>>& l1tObjectCollectionHandle,
@@ -321,7 +321,7 @@ MatchGenJetWithL1Objects::_matchParticleWithL1Object
 
 template <class T> // <3
 const std::vector <std::tuple < TriggerObject, Particle, float > > 
-MatchGenJetWithL1Objects::_matchGenJetWithL1Object
+MatchGenJetToL1Jet::_matchGenJetWithL1Object
 (
   const edm::Handle < std::vector< reco::GenJet > > & genJetCollectionHandle,
   const edm::Handle < BXVector < T > > & l1tObjectCollectionHandle,
@@ -374,20 +374,20 @@ MatchGenJetWithL1Objects::_matchGenJetWithL1Object
 }
 
 // ------------ method called once each job just before starting event loop  ------------
-void MatchGenJetWithL1Objects::beginJob()
+void MatchGenJetToL1Jet::beginJob()
 {
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
-void MatchGenJetWithL1Objects::endJob() 
+void MatchGenJetToL1Jet::endJob() 
 {
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
-void MatchGenJetWithL1Objects::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
+void MatchGenJetToL1Jet::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
 {
   
 }
 
 //define this as a plug-in
-DEFINE_FWK_MODULE(MatchGenJetWithL1Objects);
+DEFINE_FWK_MODULE(MatchGenJetToL1Jet);
