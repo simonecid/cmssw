@@ -63,10 +63,12 @@ inputFiles = open(options.inputFiles[0])
 process.source.fileNames = cms.untracked.vstring(inputFiles.readlines())
 inputFiles.close()
 
-
 #Splitting the source and reassigning the correct chunk to source
 process.source.fileNames = splitInBlocks(process.source.fileNames, options.numberOfBlocks)[options.blockIndex]
 
 #Setting output file name 
 if options.outputFile != "":
   process.out.fileName = options.outputFile
+  if hasattr(process, "TFileService"):
+    #if it has a fileservice we use the output file name without extension as a prefix
+    process.TFileService.fileName = options.outputFile.replace(".root", "") + "_" + process.TFileService.fileName
