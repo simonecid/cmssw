@@ -50,7 +50,7 @@ cd CMSSW_10_1_5/src
 cmsenv
 scramv1 b ProjectRename
 #git cms-merge-topic simonecid:${BRANCH}
-scram b -j4
+scram b
 
 mkdir __output
 
