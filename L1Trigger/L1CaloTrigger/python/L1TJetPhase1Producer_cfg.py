@@ -41,7 +41,7 @@ process.ak4GenJetFromPfClusters = cms.EDProducer(
 ak4JetFromPfCandidatesParameters.src = cms.InputTag("l1pfProducerTightTK", "Puppi", "IN")
 process.ak4GenJetFromPfCandidates = cms.EDProducer(
     "FastjetJetProducer",
-    ak4JetFromPfClustersParameters,
+    ak4JetFromPfCandidatesParameters,
     AnomalousCellParameters,
     jetAlgorithm = cms.string("AntiKt"),
     rParam       = cms.double(0.4),
