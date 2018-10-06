@@ -38,7 +38,7 @@ process.ak4GenJetFromPfClusters = cms.EDProducer(
 
 )
 
-ak4JetFromPfCandidatesParameters.src = cms.InputTag("l1pfProducerTightTK", "Puppi", "IN")
+ak4JetFromPfCandidatesParameters.src = cms.InputTag("l1pfProducer", "PF", "IN")
 process.ak4GenJetFromPfCandidates = cms.EDProducer(
     "FastjetJetProducer",
     ak4JetFromPfCandidatesParameters,
