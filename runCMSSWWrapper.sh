@@ -43,9 +43,12 @@ OUTPUT_FILENAME=${jobName}_${clusterId}.${processId}.root
 source /cvmfs/cms.cern.ch/cmsset_default.sh
 
 set -o xtrace
-cmsrel CMSSW_10_1_5
-rm -r CMSSW_10_1_5/src
-cp -r /software/sb17498/CMSSW_10_1_5/src CMSSW_10_1_5
+#cmsrel CMSSW_10_1_5
+#rm -r CMSSW_10_1_5/src
+#cp -r /software/sb17498/CMSSW_10_1_5/src CMSSW_10_1_5
+/usr/bin/hdfs dfs -copyToLocal /user/sb17498/software/CMSSW_10_1_5.tar.gz .
+tar xzvf CMSSW_10_1_5.tar.gz
+
 cd CMSSW_10_1_5/src
 cmsenv
 scramv1 b ProjectRename
