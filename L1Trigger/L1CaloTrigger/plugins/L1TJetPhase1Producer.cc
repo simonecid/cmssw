@@ -32,9 +32,10 @@ Description: Produces jets with sliding window algorithm using pfcluster and pfc
 #include "TH2F.h"
 
 #include <csignal>
+#include <algorithm>
 
 //UNCOMMENT TO CREATE DEBUG HISTO
-//#define DEBUG
+#define DEBUG
 
 //class L1TJetPhase1Producer : public edm::EDProducer {
 class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResources> {
@@ -49,6 +50,7 @@ class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResourc
       /// Finds the seeds in the caloGrid, seeds are saved in a vector that contain the index in the TH2F of each seed
       std::vector<std::tuple<int, int>> _findSeeds(const TH2F & caloGrid, float seedThreshold);
       BXVector<l1t::Jet> _buildJetsFromSeeds(const TH2F & caloGrid, const std::vector<std::tuple<int, int>> & seeds);
+      void _subtract9x9Pileup(const TH2F & caloGrid, BXVector<l1t::Jet> & jetCollection);
       /// Get the energy of a certain tower while correctly handling phi periodicity in case of overflow
       float _getTowerEnergy(const TH2F & caloGrid, int iEta, int iPhi);
 
@@ -180,7 +182,9 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     this -> _caloGridPfCandidate -> Reset();
     this -> _fillCaloGrid<>(*(this -> _caloGridPfCandidate), *pfCandidateCollectionHandle);
     const auto seedsVector = this -> _findSeeds(*(this -> _caloGridPfCandidate), this -> _seedPtThreshold); // seedPtThreshold = 6
-    const auto l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCandidate), seedsVector);
+    auto l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCandidate), seedsVector);
+    this -> _subtract9x9Pileup(*(this -> _caloGridPfCandidate), l1jetVector);
+
     std::unique_ptr< BXVector<l1t::Jet> > l1jetVectorPtr(new BXVector<l1t::Jet>(l1jetVector));
     iEvent.put(std::move(l1jetVectorPtr), "Phase1L1TJetFromPfCandidates");
   }
@@ -198,17 +202,66 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     this -> _caloGridPfCluster -> Reset();
     this -> _fillCaloGrid<>(*(this -> _caloGridPfCluster), *pfClusterCollectionHandle);
     const auto seedsVector = this -> _findSeeds(*(this -> _caloGridPfCluster), this -> _seedPtThreshold); // seedPtThreshold = 6
-    const auto l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCluster), seedsVector);
+    auto l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCluster), seedsVector);
+    this -> _subtract9x9Pileup(*(this -> _caloGridPfCandidate), l1jetVector);
+
     std::unique_ptr< BXVector<l1t::Jet> > l1jetVectorPtr(new BXVector<l1t::Jet>(l1jetVector));
     iEvent.put(std::move(l1jetVectorPtr), "Phase1L1TJetFromPfClusters");
   }
-
-
 
   return;
 
 }
 
+void L1TJetPhase1Producer::_subtract9x9Pileup(const TH2F & caloGrid, BXVector<l1t::Jet> & jetCollection) {
+  //For each jet we compute the 4 side bands
+  //for (l1t::Jet & l1tjet: jetCollection) {
+  for (auto l1tjetIterator = jetCollection.begin(0); l1tjetIterator != jetCollection.end(0); l1tjetIterator++)
+  {
+    l1t::Jet l1tjet = *l1tjetIterator;
+    // these variables host the total pt in each sideband and the total pileup contribution
+    float topBandPt = 0;
+    float leftBandPt = 0;
+    float rightBandPt = 0;
+    float bottomBandPt = 0;
+    float pileUpEnergy;
+
+    // hold the jet's x-y (and z, as I have to use it, even if 2D) location in the histo
+    int xCenter, yCenter, zCenter;
+    // Retrieving histo-coords for seed
+    caloGrid.GetBinXYZ(caloGrid.FindFixBin(l1tjet.eta(), l1tjet.phi()), xCenter, yCenter, zCenter);
+    
+    // Computing pileup
+    for (int x = -4; x <= 4; x++) {
+      for (int y = 0; y < 3; y++) {
+        // top band, I go up 5 squares to reach the bottom of the top band
+        // +x scrolls from left to right, +y scrolls up
+        topBandPt += this -> _getTowerEnergy(caloGrid, xCenter + x, yCenter + (5 + y));
+        // left band, I go left 5 squares (-5) to reach the bottom of the top band
+        // +x scrolls from bottom to top, +y scrolls left
+        leftBandPt += this -> _getTowerEnergy(caloGrid, xCenter - (5 + y), yCenter + x);
+        // right band, I go right 5 squares (+5) to reach the bottom of the top band
+        // +x scrolls from bottom to top, +y scrolls right
+        rightBandPt += this -> _getTowerEnergy(caloGrid, xCenter + (5 + y), yCenter + x);
+        // right band, I go right 5 squares (+5) to reach the bottom of the top band
+        // +x scrolls from bottom to top, +y scrolls right
+        bottomBandPt += this -> _getTowerEnergy(caloGrid, xCenter + x, yCenter - (5 + y));
+      }
+    }
+    // adding bands and removing the maximum band (equivalent to adding the three minimum bands)
+    pileUpEnergy = topBandPt + leftBandPt + rightBandPt + bottomBandPt - std::max(topBandPt, std::max(leftBandPt, std::max(rightBandPt, bottomBandPt)));
+
+    //preparing the new 4-momentum vector
+    math::PtEtaPhiMLorentzVector ptVector;
+    // removing pu contribution
+    ptVector.SetPt(l1tjet.pt() - pileUpEnergy);
+    ptVector.SetEta(l1tjet.eta());
+    ptVector.SetPhi(l1tjet.phi());
+    //updating the jet
+    l1tjet.setP4(ptVector);
+  }
+  return ;
+}
 
 std::vector<std::tuple<int, int>> L1TJetPhase1Producer::_findSeeds(const TH2F & caloGrid, float seedThreshold) 
 {

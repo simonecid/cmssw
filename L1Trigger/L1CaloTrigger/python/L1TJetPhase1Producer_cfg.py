@@ -13,10 +13,10 @@ process = cms.Process("L1TJetPhase1Producer")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
 
 process.source = process.source = cms.Source("PoolSource",
-  fileNames = cms.untracked.vstring('file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD_old/GeneratePfClustersAndCandidatesFromQCD_3714683.0.root')
+  fileNames = cms.untracked.vstring('file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD/GeneratePfClustersAndCandidatesFromQCD_3715975.0.root')
 )
 
 process.TFileService = cms.Service('TFileService', fileName = cms.string("Histograms.root"))
