@@ -1,0 +1,19 @@
+Universe = vanilla
+job = ComputePhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi
+cmd = runCMSSWWrapper.sh
+args= -n 595 -j $(job) -c $(cluster) -p $(process) -i L1Trigger/L1CaloTrigger/python/L1TJetPhase1Producer_cfg_PUPPI.py -d ComputePhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi -s QCD_Pt-0to1000_Tune4C_14TeV_pythia8_PU200_WCandidateAndClusters.txt -b L1PF_CMSSW_JetClustering
+# Better not to put logs in the same folder, as they are plenty
+output = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).out
+error = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).err
+log = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).log
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT_OR_EVICT
+#+SingularityImage = "/cvmfs/singularity.opensciencegrid.org/kreczko/workernode:centos7"
+
+use_x509userproxy = true
+
+request_cpus = 1
+request_memory = 2000
+request_disk = 3000000
+
+queue 595
