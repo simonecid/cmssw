@@ -274,7 +274,8 @@ void L1TJetPhase1Producer::_subtract9x9Pileup(const TH2F & caloGrid, l1t::Jet & 
   //preparing the new 4-momentum vector
   math::PtEtaPhiMLorentzVector ptVector;
   // removing pu contribution
-  ptVector.SetPt(l1tjet.pt() - pileUpEnergy);
+  float ptAfterPUSubtraction = l1tjet.pt() - pileUpEnergy;
+  ptVector.SetPt((ptAfterPUSubtraction > 0)? ptAfterPUSubtraction : 0); 
   ptVector.SetEta(l1tjet.eta());
   ptVector.SetPhi(l1tjet.phi());
   //updating the jet
