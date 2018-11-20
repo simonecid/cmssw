@@ -1,7 +1,7 @@
 Universe = vanilla
 job = ComputePhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD
 cmd = runCMSSWWrapper.sh
-args= -n 51 -j $(job) -c $(cluster) -p $(process) -i L1Trigger/L1CaloTrigger/python/L1TJetPhase1Producer_cfg.py -d ComputePhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PF -s QCD_Pt-0to1000_Tune4C_14TeV_pythia8_WCandidateAndClusters.txt -b L1PF_CMSSW_JetClustering
+args= -n 51 -j $(job) -c $(cluster) -p $(process) -i L1Trigger/L1CaloTrigger/python/L1TJetPhase1Producer_cfg.py -d ComputePhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtraction_PF -s QCD_Pt-0to1000_Tune4C_14TeV_pythia8_WCandidateAndClusters.txt -b L1PF_CMSSW_JetClustering
 # Better not to put logs in the same folder, as they are plenty
 output = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).out
 error = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).err
