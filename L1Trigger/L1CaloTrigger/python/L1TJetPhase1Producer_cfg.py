@@ -13,7 +13,7 @@ process = cms.Process("L1TJetPhase1Producer")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
 
 process.source = process.source = cms.Source("PoolSource",
   fileNames = cms.untracked.vstring('file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD/GeneratePfClustersAndCandidatesFromQCD_3715975.0.root')
@@ -49,7 +49,7 @@ process.ak4GenJetFromPfCandidates = cms.EDProducer(
     jetCollInstanceName = cms.string("ak4GenJetFromPfCandidates")
 )
 
-process.ConvertGenJetToL1TJet = cms.EDProducer('ConvertGenJetToL1TJet',
+process.ConvertGenJetToCaloJet = cms.EDProducer('ConvertGenJetToCaloJet',
   ak4GenJetFromPfClustersCollectionTag = cms.InputTag("ak4GenJetFromPfClusters", "ak4GenJetFromPfClusters", "L1TJetPhase1Producer"),
   ak4GenJetFromPfCandidatesCollectionTag = cms.InputTag("ak4GenJetFromPfCandidates", "ak4GenJetFromPfCandidates", "L1TJetPhase1Producer"),
 )
@@ -72,31 +72,31 @@ process.PrintMomentum = cms.EDAnalyzer('PrintMomentum',
   phase1L1TJetFromPfClustersTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfClusters", "L1TJetPhase1Producer"),
 )
 
-process.MatchAK4GenJetWithPhase1L1TJetFromPfClusters = cms.EDAnalyzer('MatchGenJetToL1Jet',
+process.MatchAK4GenJetWithPhase1L1TJetFromPfClusters = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  l1tJetCollectionTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfClusters", "L1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfClusters", "L1TJetPhase1Producer"),
 )
 
-process.MatchAK4GenJetWithPhase1L1TJetFromPfCandidates = cms.EDAnalyzer('MatchGenJetToL1Jet',
+process.MatchAK4GenJetWithPhase1L1TJetFromPfCandidates = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  l1tJetCollectionTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfCandidates", "L1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfCandidates", "L1TJetPhase1Producer"),
 )
 
-process.MatchAK4GenJetWithAK4JetFromPfClusters = cms.EDAnalyzer('MatchGenJetToL1Jet',
+process.MatchAK4GenJetWithAK4JetFromPfClusters = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  l1tJetCollectionTag = cms.InputTag("ConvertGenJetToL1TJet", "ak4L1TJetFromPfClusters", "L1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfClusters", "L1TJetPhase1Producer"),
 )
 
-process.MatchAK4GenJetWithAK4JetFromPfCandidates = cms.EDAnalyzer('MatchGenJetToL1Jet',
+process.MatchAK4GenJetWithAK4JetFromPfCandidates = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  l1tJetCollectionTag = cms.InputTag("ConvertGenJetToL1TJet", "ak4L1TJetFromPfCandidates", "L1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfCandidates", "L1TJetPhase1Producer"),
 )
 
-#process.p = cms.Path(process.ak4JetFromPfClusters + process.ak4JetFromPfCandidates + process.L1TJetPhase1Producer + process.MatchGenJetToL1Jet)
+#process.p = cms.Path(process.ak4JetFromPfClusters + process.ak4JetFromPfCandidates + process.L1TJetPhase1Producer + process.MatchGenJetToRecoCaloJet)
 process.p = cms.Path(
   process.ak4GenJetFromPfClusters +
   process.ak4GenJetFromPfCandidates +
-  process.ConvertGenJetToL1TJet +
+  process.ConvertGenJetToCaloJet +
   process.L1TJetPhase1Producer +
   process.MatchAK4GenJetWithPhase1L1TJetFromPfClusters +
   process.MatchAK4GenJetWithPhase1L1TJetFromPfCandidates +
@@ -110,8 +110,8 @@ process.out = cms.OutputModule("PoolOutputModule",
   fileName = cms.untracked.string('myOutputFile.root'),
   outputCommands = cms.untracked.vstring(
     "keep *",
-    "drop *_ak4GenJetFromPfClusters_*_*",
-    "drop *_ak4GenJetFromPfCandidates_*_*",    
+    "drop *_*_ak4GenJetFromPfCandidates_*",
+    "drop *_*_ak4GenJetFromPfClusters_*"
   ),
 )
 
