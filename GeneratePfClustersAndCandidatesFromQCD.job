@@ -1,0 +1,19 @@
+Universe = vanilla
+job = GeneratePfClustersAndCandidatesFromQCD
+cmd = runCMSSWWrapper.sh
+args= -n 51 -j $(job) -c $(cluster) -p $(process) -i FastPUPPI/NtupleProducer/python/runNewInputs.py -d GeneratePfClustersAndCandidatesFromQCD_PF -s QCD_Pt-0to1000_Tune4C_14TeV_pythia8.txt -b L1PF_CMSSW_JetClustering
+# Better not to put logs in the same folder, as they are plenty
+output = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).out
+error = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).err
+log = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).log
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT_OR_EVICT
+#+SingularityImage = "/cvmfs/singularity.opensciencegrid.org/kreczko/workernode:centos7"
+
+use_x509userproxy = true
+
+request_cpus = 1
+request_memory = 4000
+request_disk = 3000000
+
+queue 51
