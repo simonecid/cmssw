@@ -117,7 +117,7 @@ MatchGenJetToRecoCaloJet::MatchGenJetToRecoCaloJet(const edm::ParameterSet& iCon
   this -> _getTokens(iConfig);
   usesResource("TFileService");
   edm::Service<TFileService> fs;
-  this -> _caloJetGenJetTree = fs -> make<TTree>("matchedcaloJetGenJetTree", "TTree with generator-level jet / L1T Jet information");
+  this -> _caloJetGenJetTree = fs -> make<TTree>("matchedCaloJetGenJetTree", "TTree with generator-level jet / L1T Jet information");
   this -> _caloJetTree = fs -> make<TTree>("caloJetTree", "TTree with generator-level jet / L1T Jet information");
   this -> _caloLeadingJetTree = fs -> make<TTree>("caloLeadingJetTree", "TTree with generator-level jet / L1T Jet information");
   this -> _genJetTree = fs -> make<TTree>("genJetTree", "TTree with generator-level jet information");
