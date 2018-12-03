@@ -49,9 +49,9 @@ process.configurationMetadata = cms.untracked.PSet(
     version = cms.untracked.string('$Revision: 1.19 $')
 )
 
-# Output definition
+# Out definition
 
-process.output = cms.OutputModule("PoolOutputModule",
+process.out = cms.OutputModule("PoolOutputModule",
     SelectEvents = cms.untracked.PSet(
         SelectEvents = cms.vstring('generation_step')
     ),
@@ -106,7 +106,7 @@ process.L1simulation_step = cms.Path(process.SimL1Emulator)
 process.L1TrackTrigger_step = cms.Path(process.L1TrackTrigger)
 process.digi2raw_step = cms.Path(process.DigiToRaw)
 process.endjob_step = cms.EndPath(process.endOfProcess)
-process.output_step = cms.EndPath(process.output)
+process.output_step = cms.EndPath(process.out)
 
 # Schedule definition
 #MERGE with process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.endjob_step,process.RAWSIMoutput_step)
