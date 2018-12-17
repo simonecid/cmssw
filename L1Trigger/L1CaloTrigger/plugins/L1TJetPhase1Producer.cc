@@ -173,50 +173,6 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     {
       l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGrid), seedsVector);
     }
-<<<<<<< HEAD
-    
-    #ifdef DEBUG
-    std::cout << ">>>>>> DUMPING JETS <<<<<<" << std::endl;
-    for (const auto & l1jet: l1jetVector) 
-    {
-      std::cout << l1jet.pt() << "\t" << l1jet.eta() << "\t" << l1jet.phi() << "\t" << std::endl;
-    }
-    #endif
-    std::unique_ptr< std::vector<reco::CaloJet> > l1jetVectorPtr(new std::vector<reco::CaloJet>(l1jetVector));
-    iEvent.put(std::move(l1jetVectorPtr), "Phase1L1TJetFromPfCandidates");
-  }
-
-  if (this -> _pfClusterCollectionTag) {
-    edm::Handle < std::vector< l1t::PFCluster > > pfClusterCollectionHandle;
-    iEvent.getByToken(*(this -> _pfClusterCollectionTag), pfClusterCollectionHandle);
-    // dumping the data
-    #ifdef DEBUG
-    std::cout << ">>>>>> DUMPING PFCLUSTERS <<<<<<" << std::endl;
-    for (auto pfClusterIterator = pfClusterCollectionHandle -> begin(); pfClusterIterator != pfClusterCollectionHandle -> end(); pfClusterIterator++) 
-    {
-      std::cout << pfClusterIterator -> pt() << "\t" << pfClusterIterator -> eta() << "\t" << pfClusterIterator -> phi() << "\t" << std::endl;
-    }
-    #endif
-    #ifndef DEBUG
-    this -> _caloGridPfCluster -> Reset();
-    this -> _fillCaloGrid<>(*(this -> _caloGridPfCluster), *pfClusterCollectionHandle);
-    #endif
-    const auto seedsVector = this -> _findSeeds(*(this -> _caloGridPfCluster), this -> _seedPtThreshold); // seedPtThreshold = 6
-    std::vector<reco::CaloJet> l1jetVector;
-    if (this -> _puSubtraction) {
-      l1jetVector = this -> _buildJetsFromSeedsWithPUSubtraction(*(this -> _caloGridPfCluster), seedsVector);
-    } else {
-      l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCluster), seedsVector);
-    }
-
-    #ifdef DEBUG
-    std::cout << ">>>>>> DUMPING JETS <<<<<<" << std::endl;
-    for (const auto & l1jet: l1jetVector) 
-    {
-      std::cout << l1jet.pt() << "\t" << l1jet.eta() << "\t" << l1jet.phi() << "\t" << std::endl;
-    }
-    #endif
-=======
 
     #ifdef DEBUG
     std::cout << ">>>>>> DUMPING JETS <<<<<<" << std::endl;
@@ -226,7 +182,6 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     }
     #endif 
     
->>>>>>> L1PF_CMSSW_JetClustering_EDMView
     std::unique_ptr< std::vector<reco::CaloJet> > l1jetVectorPtr(new std::vector<reco::CaloJet>(l1jetVector));
     iEvent.put(std::move(l1jetVectorPtr), this -> _outputCollectionName);
   }
