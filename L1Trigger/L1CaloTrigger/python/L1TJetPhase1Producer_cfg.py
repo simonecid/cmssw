@@ -112,13 +112,12 @@ process.p = cms.Path(
   process.ak4GenJetFromPfClusters +
   process.ak4GenJetFromPfCandidates +
   process.ConvertGenJetToCaloJet +
-  process.Phase1L1TJetFromPfCandidatesProducer + 
+  process.Phase1L1TJetFromPfCandidatesProducer +
   process.Phase1L1TJetFromPfClustersProducer + 
-  process.MatchAK4GenJetWithPhase1L1TJetFromPfClusters +
   process.MatchAK4GenJetWithPhase1L1TJetFromPfCandidates +
+  process.MatchAK4GenJetWithPhase1L1TJetFromPfClusters +
   process.MatchAK4GenJetWithAK4JetFromPfClusters +
   process.MatchAK4GenJetWithAK4JetFromPfCandidates
-
 )
 #process.p = cms.Path(process.FastjetJetProducer + process.L1TJetPhase1Producer + process.PrintMomentum)
 
