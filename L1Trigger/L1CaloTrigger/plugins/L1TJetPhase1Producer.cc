@@ -35,7 +35,7 @@ Description: Produces jets with sliding window algorithm using pfcluster and pfc
 #include <algorithm>
 
 //UNCOMMENT TO CREATE DEBUG HISTO
-//#define DEBUG
+#define DEBUG
 
 //class L1TJetPhase1Producer : public edm::EDProducer {
 class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResources> {
@@ -146,30 +146,41 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
   
   #ifdef DEBUG
   this -> _caloGrid -> Reset();
-  #include "L1Trigger/L1CaloTrigger/debug/CaloGridTestingCode.cdebug"
+  //#include "L1Trigger/L1CaloTrigger/debug/CaloGridTestingCode.cdebug"
   #endif
 
   if (this -> _inputCollectionTag) {
     edm::Handle < edm::View< reco::Candidate > > inputCollectionHandle;
     iEvent.getByToken(*(this -> _inputCollectionTag), inputCollectionHandle);
     // dumping the data
-    //std::cout << ">>>>>> DUMPING PFCANDIDATES <<<<<<" << std::endl;
-    //for (auto pfCandidateIterator = inputCollectionHandle -> begin(); pfCandidateIterator != inputCollectionHandle -> end(); pfCandidateIterator++) 
-    //{
-    //  std::cout << pfCandidateIterator -> pt() << "\t" << pfCandidateIterator -> eta() << "\t" << pfCandidateIterator -> phi() << "\t" << std::endl;
-    //}
-    
+    #ifdef DEBUG
+    std::cout << ">>>>>> DUMPING INPUTS <<<<<<" << std::endl;
+    for (auto pfCandidateIterator = inputCollectionHandle -> begin(); pfCandidateIterator != inputCollectionHandle -> end(); pfCandidateIterator++) 
+    {
+      std::cout << pfCandidateIterator -> pt() << "\t" << pfCandidateIterator -> eta() << "\t" << pfCandidateIterator -> phi() << "\t" << std::endl;
+    }
+    #endif 
     #ifndef DEBUG
     this -> _caloGrid -> Reset();
     this -> _fillCaloGrid<>(*(this -> _caloGrid), *inputCollectionHandle);
     #endif
     const auto seedsVector = this -> _findSeeds(*(this -> _caloGrid), this -> _seedPtThreshold); // seedPtThreshold = 6
     std::vector<reco::CaloJet> l1jetVector;
-    if (this -> _puSubtraction) {
+    if (this -> _puSubtraction)
+    {
       l1jetVector = this -> _buildJetsFromSeedsWithPUSubtraction(*(this -> _caloGrid), seedsVector);
-    } else {
+    } else
+    {
       l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGrid), seedsVector);
     }
+
+    #ifdef DEBUG
+    std::cout << ">>>>>> DUMPING JETS <<<<<<" << std::endl;
+    for (const auto & l1jet: l1jetVector)
+    {
+      std::cout << l1jet.pt() << "\t" << l1jet.eta() << "\t" << l1jet.phi() << "\t" << std::endl;
+    }
+    #endif 
     
     std::unique_ptr< std::vector<reco::CaloJet> > l1jetVectorPtr(new std::vector<reco::CaloJet>(l1jetVector));
     iEvent.put(std::move(l1jetVectorPtr), this -> _outputCollectionName);
