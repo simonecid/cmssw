@@ -35,7 +35,7 @@ Description: Produces jets with sliding window algorithm using pfcluster and pfc
 #include <algorithm>
 
 //UNCOMMENT TO CREATE DEBUG HISTO
-#define DEBUG
+//#define DEBUG
 
 //class L1TJetPhase1Producer : public edm::EDProducer {
 class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResources> {
