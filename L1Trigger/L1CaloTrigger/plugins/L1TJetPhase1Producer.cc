@@ -21,6 +21,7 @@ Description: Produces jets with sliding window algorithm using pfcluster and pfc
 #include "DataFormats/Phase2L1ParticleFlow/interface/PFCandidate.h"
 #include "DataFormats/Phase2L1ParticleFlow/interface/PFCluster.h"
 #include "DataFormats/L1Trigger/interface/L1Candidate.h"
+#include "DataFormats/Common/interface/View.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -56,13 +57,11 @@ class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResourc
       reco::CaloJet _buildJetFromSeed(const TH2F & caloGrid, const std::tuple<int, int> & seed);
 
       // <3 handy method to fill the calogrid with whatever type
-      template <class TriggerPrimitive>
-      void _fillCaloGrid(TH2F & caloGrid, const std::vector<TriggerPrimitive> & triggerPrimitives);
+      template <class Container>
+      void _fillCaloGrid(TH2F & caloGrid, const Container & triggerPrimitives);
 
-      edm::EDGetTokenT<std::vector<l1t::PFCandidate>> *_pfCandidateCollectionTag;
-      edm::EDGetTokenT<std::vector<l1t::PFCluster>> *_pfClusterCollectionTag;
-      TH2F* _caloGridPfCandidate;
-      TH2F* _caloGridPfCluster;
+      edm::EDGetTokenT<edm::View<reco::Candidate>> *_inputCollectionTag;
+      TH2F* _caloGrid;
 
       std::vector<double> _etaBinning;
       size_t _nBinsEta;
@@ -73,6 +72,8 @@ class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResourc
       unsigned int _jetIPhiSize;
       double _seedPtThreshold;
       bool _puSubtraction;
+
+      std::string _outputCollectionName;
 
 };
 
@@ -91,55 +92,27 @@ L1TJetPhase1Producer::L1TJetPhase1Producer(const edm::ParameterSet& iConfig)
   this -> _jetIPhiSize = iConfig.getParameter<unsigned int>("jetIPhiSize");
   this -> _seedPtThreshold = iConfig.getParameter<double>("seedPtThreshold");
   this -> _puSubtraction = iConfig.getParameter<bool>("puSubtraction");
+  this -> _outputCollectionName = iConfig.getParameter<std::string>("outputCollectionName");
 
-  // Retrieving the pfCandidates and pfClusters if input tag has been provided
-  try
-  {
-    this -> _pfCandidateCollectionTag = new edm::EDGetTokenT< std::vector<l1t::PFCandidate> >(consumes< std::vector<l1t::PFCandidate> > (iConfig.getParameter< edm::InputTag >("pfCandidateCollectionTag")));
-    #ifndef DEBUG
-    this -> _caloGridPfCandidate = new TH2F("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
-    #endif
-    #ifdef DEBUG
-    this -> _caloGridPfCandidate = fs -> make<TH2F>("caloGridPfCandidate", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
-    #endif
-    this -> _caloGridPfCandidate -> GetXaxis() -> SetTitle("#eta");
-    this -> _caloGridPfCandidate -> GetYaxis() -> SetTitle("#phi");
-    produces<std::vector<reco::CaloJet> >( "Phase1L1TJetFromPfCandidates" ).setBranchAlias("Phase1L1TJetFromPfCandidates");
-  } catch (std::exception const & ex) 
-  {
-    std::cerr << ">>> pfCandidateCollectionTag not found" << std::endl;
-    this -> _pfCandidateCollectionTag = NULL;
-    this -> _caloGridPfCandidate = NULL;
-  }
+  this -> _inputCollectionTag = new edm::EDGetTokenT< edm::View<reco::Candidate> >(consumes< edm::View<reco::Candidate> > (iConfig.getParameter< edm::InputTag >("inputCollectionTag")));
+  #ifndef DEBUG
+  this -> _caloGrid = new TH2F("caloGrid", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+  #endif
+  #ifdef DEBUG
+  this -> _caloGrid = fs -> make<TH2F>("caloGrid", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+  #endif
+  this -> _caloGrid -> GetXaxis() -> SetTitle("#eta");
+  this -> _caloGrid -> GetYaxis() -> SetTitle("#phi");
+  produces<std::vector<reco::CaloJet> >( this->_outputCollectionName ).setBranchAlias(this->_outputCollectionName);
   
-  try
-  {
-    this -> _pfClusterCollectionTag = new edm::EDGetTokenT< std::vector<l1t::PFCluster> >(consumes< std::vector<l1t::PFCluster> > (iConfig.getParameter< edm::InputTag >("pfClusterCollectionTag")));
-    #ifndef DEBUG
-    this -> _caloGridPfCluster = new TH2F("caloGridPfCluster", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
-    #endif
-    #ifdef DEBUG
-    this -> _caloGridPfCluster = fs -> make<TH2F>("caloGridPfCluster", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
-    #endif
-    this -> _caloGridPfCluster -> GetXaxis() -> SetTitle("#eta");
-    this -> _caloGridPfCluster -> GetYaxis() -> SetTitle("#phi");
-    produces<std::vector<reco::CaloJet> >( "Phase1L1TJetFromPfClusters" ).setBranchAlias("Phase1L1TJetFromPfClusters");
-  } catch (std::exception const & ex) 
-  {
-    std::cerr << ">>> pfClusterCollectionTag not found" << std::endl;
-    this -> _pfClusterCollectionTag = NULL;
-    this -> _caloGridPfCluster = NULL;
-  }
-
+  
 }
 
 L1TJetPhase1Producer::~L1TJetPhase1Producer()
 {
-  if (this -> _pfCandidateCollectionTag) delete this -> _pfCandidateCollectionTag;
-  if (this -> _pfClusterCollectionTag) delete this -> _pfClusterCollectionTag;
+  delete this -> _inputCollectionTag;
   #ifndef DEBUG
-  if (this -> _caloGridPfCandidate) delete this -> _caloGridPfCandidate;
-  if (this -> _caloGridPfCluster) delete this -> _caloGridPfCluster;
+  if (this -> _caloGrid) delete this -> _caloGrid;
   #endif
 }
 
@@ -170,36 +143,37 @@ float L1TJetPhase1Producer::_getTowerEnergy(const TH2F & caloGrid, int iEta, int
 void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
-  // Retrieving the pfCandidates and pfClusters if input tag has been provided
   
-#ifdef DEBUG
-  this -> _caloGridPfCandidate -> Reset();
-  this -> _caloGridPfCluster -> Reset();
-  #include "L1Trigger/L1CaloTrigger/debug/CaloGridTestingCode.cdebug"
-#endif
+  #ifdef DEBUG
+  this -> _caloGrid -> Reset();
+  //#include "L1Trigger/L1CaloTrigger/debug/CaloGridTestingCode.cdebug"
+  #endif
 
-  if (this -> _pfCandidateCollectionTag) {
-    edm::Handle < std::vector< l1t::PFCandidate > > pfCandidateCollectionHandle;
-    iEvent.getByToken(*(this -> _pfCandidateCollectionTag), pfCandidateCollectionHandle);
+  if (this -> _inputCollectionTag) {
+    edm::Handle < edm::View< reco::Candidate > > inputCollectionHandle;
+    iEvent.getByToken(*(this -> _inputCollectionTag), inputCollectionHandle);
     // dumping the data
     #ifdef DEBUG
-    std::cout << ">>>>>> DUMPING PFCANDIDATES <<<<<<" << std::endl;
-    for (auto pfCandidateIterator = pfCandidateCollectionHandle -> begin(); pfCandidateIterator != pfCandidateCollectionHandle -> end(); pfCandidateIterator++) 
+    std::cout << ">>>>>> DUMPING INPUTS <<<<<<" << std::endl;
+    for (auto inputIterator = inputCollectionHandle -> begin(); pfCandidateIterator != inputCollectionHandle -> end(); pfCandidateIterator++) 
     {
-      std::cout << pfCandidateIterator -> pt() << "\t" << pfCandidateIterator -> eta() << "\t" << pfCandidateIterator -> phi() << "\t" << std::endl;
+      std::cout << inputIterator -> pt() << "\t" << inputIterator -> eta() << "\t" << inputIterator -> phi() << "\t" << std::endl;
     }
-    #endif
+    #endif 
     #ifndef DEBUG
-    this -> _caloGridPfCandidate -> Reset();
-    this -> _fillCaloGrid<>(*(this -> _caloGridPfCandidate), *pfCandidateCollectionHandle);
+    this -> _caloGrid -> Reset();
+    this -> _fillCaloGrid<>(*(this -> _caloGrid), *inputCollectionHandle);
     #endif
-    const auto seedsVector = this -> _findSeeds(*(this -> _caloGridPfCandidate), this -> _seedPtThreshold); // seedPtThreshold = 6
+    const auto seedsVector = this -> _findSeeds(*(this -> _caloGrid), this -> _seedPtThreshold); // seedPtThreshold = 6
     std::vector<reco::CaloJet> l1jetVector;
-    if (this -> _puSubtraction) {
-      l1jetVector = this -> _buildJetsFromSeedsWithPUSubtraction(*(this -> _caloGridPfCandidate), seedsVector);
-    } else {
-      l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGridPfCandidate), seedsVector);
+    if (this -> _puSubtraction)
+    {
+      l1jetVector = this -> _buildJetsFromSeedsWithPUSubtraction(*(this -> _caloGrid), seedsVector);
+    } else
+    {
+      l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGrid), seedsVector);
     }
+<<<<<<< HEAD
     
     #ifdef DEBUG
     std::cout << ">>>>>> DUMPING JETS <<<<<<" << std::endl;
@@ -242,8 +216,19 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
       std::cout << l1jet.pt() << "\t" << l1jet.eta() << "\t" << l1jet.phi() << "\t" << std::endl;
     }
     #endif
+=======
+
+    #ifdef DEBUG
+    std::cout << ">>>>>> DUMPING JETS <<<<<<" << std::endl;
+    for (const auto & l1jet: l1jetVector)
+    {
+      std::cout << l1jet.pt() << "\t" << l1jet.eta() << "\t" << l1jet.phi() << "\t" << std::endl;
+    }
+    #endif 
+    
+>>>>>>> L1PF_CMSSW_JetClustering_EDMView
     std::unique_ptr< std::vector<reco::CaloJet> > l1jetVectorPtr(new std::vector<reco::CaloJet>(l1jetVector));
-    iEvent.put(std::move(l1jetVectorPtr), "Phase1L1TJetFromPfClusters");
+    iEvent.put(std::move(l1jetVectorPtr), this -> _outputCollectionName);
   }
 
   return;
@@ -419,8 +404,8 @@ std::vector<reco::CaloJet> L1TJetPhase1Producer::_buildJetsFromSeeds(const TH2F 
 }
 
 
-template <class TriggerPrimitive>
-void L1TJetPhase1Producer::_fillCaloGrid(TH2F & caloGrid, const std::vector<TriggerPrimitive> & triggerPrimitives)
+template <class Container>
+void L1TJetPhase1Producer::_fillCaloGrid(TH2F & caloGrid, const Container & triggerPrimitives)
 {
   //Filling the calo grid with the primitives
   for (auto primitiveIterator = triggerPrimitives.begin(); primitiveIterator != triggerPrimitives.end(); primitiveIterator++) 
