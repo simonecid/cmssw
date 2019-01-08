@@ -49,7 +49,7 @@ class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResourc
       virtual void produce(edm::Event&, const edm::EventSetup&);
       /// Finds the seeds in the caloGrid, seeds are saved in a vector that contain the index in the TH2F of each seed
       std::vector<std::tuple<int, int>> _findSeeds(const TH2F & caloGrid, float seedThreshold);
-      std::vector<reco::CaloJet> _buildJetsFromSeedsWithPUSubtraction(const TH2F & caloGrid, const std::vector<std::tuple<int, int>> & seeds);
+      std::vector<reco::CaloJet> _buildJetsFromSeedsWithPUSubtraction(const TH2F & caloGrid, const std::vector<std::tuple<int, int>> & seeds, bool killZeroPt);
       std::vector<reco::CaloJet> _buildJetsFromSeeds(const TH2F & caloGrid, const std::vector<std::tuple<int, int>> & seeds);
       void _subtract9x9Pileup(const TH2F & caloGrid, reco::CaloJet & jet);
       /// Get the energy of a certain tower while correctly handling phi periodicity in case of overflow
@@ -72,6 +72,7 @@ class L1TJetPhase1Producer : public edm::one::EDProducer<edm::one::SharedResourc
       unsigned int _jetIPhiSize;
       double _seedPtThreshold;
       bool _puSubtraction;
+      bool _vetoZeroPt;
 
       std::string _outputCollectionName;
 
@@ -93,6 +94,7 @@ L1TJetPhase1Producer::L1TJetPhase1Producer(const edm::ParameterSet& iConfig)
   this -> _seedPtThreshold = iConfig.getParameter<double>("seedPtThreshold");
   this -> _puSubtraction = iConfig.getParameter<bool>("puSubtraction");
   this -> _outputCollectionName = iConfig.getParameter<std::string>("outputCollectionName");
+  this -> _vetoZeroPt = iConfig.getParameter<bool>("vetoZeroPt");
 
   this -> _inputCollectionTag = new edm::EDGetTokenT< edm::View<reco::Candidate> >(consumes< edm::View<reco::Candidate> > (iConfig.getParameter< edm::InputTag >("inputCollectionTag")));
   #ifndef DEBUG
@@ -168,7 +170,7 @@ void L1TJetPhase1Producer::produce(edm::Event& iEvent, const edm::EventSetup& iS
     std::vector<reco::CaloJet> l1jetVector;
     if (this -> _puSubtraction)
     {
-      l1jetVector = this -> _buildJetsFromSeedsWithPUSubtraction(*(this -> _caloGrid), seedsVector);
+      l1jetVector = this -> _buildJetsFromSeedsWithPUSubtraction(*(this -> _caloGrid), seedsVector, this -> _vetoZeroPt);
     } else
     {
       l1jetVector = this -> _buildJetsFromSeeds(*(this -> _caloGrid), seedsVector);
@@ -327,7 +329,7 @@ reco::CaloJet L1TJetPhase1Producer::_buildJetFromSeed(const TH2F & caloGrid, con
   return jet;
 }
 
-std::vector<reco::CaloJet> L1TJetPhase1Producer::_buildJetsFromSeedsWithPUSubtraction(const TH2F & caloGrid, const std::vector<std::tuple<int, int>> & seeds)
+std::vector<reco::CaloJet> L1TJetPhase1Producer::_buildJetsFromSeedsWithPUSubtraction(const TH2F & caloGrid, const std::vector<std::tuple<int, int>> & seeds, bool killZeroPt)
 {
 
   // For each seed take a grid centered on the seed of the size specified by the user
@@ -337,6 +339,8 @@ std::vector<reco::CaloJet> L1TJetPhase1Producer::_buildJetsFromSeedsWithPUSubtra
   {
     reco::CaloJet jet = this -> _buildJetFromSeed(caloGrid, seed);
     this -> _subtract9x9Pileup(caloGrid, jet);
+    //killing jets with 0 pt
+    if ((this -> _vetoZeroPt) && (jet.pt() <= 0)) continue;
     jets.push_back(jet);
   }
 
