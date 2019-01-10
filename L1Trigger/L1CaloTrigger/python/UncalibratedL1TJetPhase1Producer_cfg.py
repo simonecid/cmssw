@@ -64,8 +64,8 @@ process.ak4GenJetFromPfCandidates = cms.EDProducer(
 )
 
 process.ConvertGenJetToCaloJet = cms.EDProducer('ConvertGenJetToCaloJet',
-  ak4GenJetFromPfClustersCollectionTag = cms.InputTag("ak4GenJetFromPfClusters", "ak4GenJetFromPfClusters", "L1TJetPhase1Producer"),
-  ak4GenJetFromPfCandidatesCollectionTag = cms.InputTag("ak4GenJetFromPfCandidates", "ak4GenJetFromPfCandidates", "L1TJetPhase1Producer"),
+  ak4GenJetFromPfClustersCollectionTag = cms.InputTag("ak4GenJetFromPfClusters", "ak4GenJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
+  ak4GenJetFromPfCandidatesCollectionTag = cms.InputTag("ak4GenJetFromPfCandidates", "ak4GenJetFromPfCandidates", "UncalibratedL1TJetPhase1Producer"),
 )
 
 process.Phase1L1TJetFromPfCandidatesProducer = cms.EDProducer('L1TJetPhase1Producer',
@@ -100,36 +100,36 @@ with open('JetCalibration/Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfCluste
   Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters = pkl.load(f)
 
 process.CalibratePhase1L1TJetFromPfClusters = cms.EDProducer('ApplyCalibrationFactors',
-  inputCollectionTag = cms.InputTag("Phase1L1TJetFromPfClustersProducer", "Phase1L1TJetFromPfClusters", "L1TJetPhase1Producer"),
+  inputCollectionTag = cms.InputTag("Phase1L1TJetFromPfClustersProducer", "Phase1L1TJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
   absEtaBinning = cms.vdouble(0, 1.4, 3, 6),
   calibration = Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters,
   outputCollectionName = cms.string("CalibratedPhase1L1TJetFromPfClusters")
 )
 
 process.PrintMomentum = cms.EDAnalyzer('PrintMomentum',
-  genJetCollectionTag = cms.InputTag("FastjetJetProducer", "", "L1TJetPhase1Producer"),
-  phase1L1TJetFromPfClustersTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfClusters", "L1TJetPhase1Producer"),
+  genJetCollectionTag = cms.InputTag("FastjetJetProducer", "", "UncalibratedL1TJetPhase1Producer"),
+  phase1L1TJetFromPfClustersTag = cms.InputTag("L1TJetPhase1Producer", "Phase1L1TJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
 )
 
 process.MatchAK4GenJetWithPhase1L1TJetFromPfClusters = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  #caloJetCollectionTag = cms.InputTag("Phase1L1TJetFromPfClustersProducer", "Phase1L1TJetFromPfClusters", "L1TJetPhase1Producer"),
-  caloJetCollectionTag = cms.InputTag("CalibratePhase1L1TJetFromPfClusters", "CalibratedPhase1L1TJetFromPfClusters", "L1TJetPhase1Producer"),
+  #caloJetCollectionTag = cms.InputTag("Phase1L1TJetFromPfClustersProducer", "Phase1L1TJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("CalibratePhase1L1TJetFromPfClusters", "CalibratedPhase1L1TJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
 )
 
 process.MatchAK4GenJetWithPhase1L1TJetFromPfCandidates = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  caloJetCollectionTag = cms.InputTag("Phase1L1TJetFromPfCandidatesProducer", "Phase1L1TJetFromPfCandidates", "L1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("Phase1L1TJetFromPfCandidatesProducer", "Phase1L1TJetFromPfCandidates", "UncalibratedL1TJetPhase1Producer"),
 )
 
 process.MatchAK4GenJetWithAK4JetFromPfClusters = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  caloJetCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfClusters", "L1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
 )
 
 process.MatchAK4GenJetWithAK4JetFromPfCandidates = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  caloJetCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfCandidates", "L1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfCandidates", "UncalibratedL1TJetPhase1Producer"),
 )
 
 #process.p = cms.Path(process.ak4JetFromPfClusters + process.ak4JetFromPfCandidates + process.L1TJetPhase1Producer + process.MatchGenJetToRecoCaloJet)
