@@ -272,21 +272,20 @@ std::vector<std::tuple<int, int>> L1TJetPhase1Producer::_findSeeds(const TH2F & 
         {
           if ((etaIndex == 0) && (phiIndex == 0)) continue;
           if (phiIndex > 0) {
-            // >=
-            isLocalMaximum = ((isLocalMaximum) && (centralPt >= this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
-          } else if (phiIndex < 0) {
-            // >
-            isLocalMaximum = ((isLocalMaximum) && (centralPt > this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
-          } else if (etaIndex > 0) { //phiIndex = 0, left side is >, right is >=
-            // >=
-            isLocalMaximum = ((isLocalMaximum) && (centralPt >= this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
+            if (phiIndex > -etaIndex){
+              isLocalMaximum = ((isLocalMaximum) && (centralPt > this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
+            } else {
+              isLocalMaximum = ((isLocalMaximum) && (centralPt >= this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
+            }
           } else {
-            // >
-            isLocalMaximum = ((isLocalMaximum) && (centralPt > this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
+            if (phiIndex >= -etaIndex){
+              isLocalMaximum = ((isLocalMaximum) && (centralPt > this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
+            } else {
+              isLocalMaximum = ((isLocalMaximum) && (centralPt >= this -> _getTowerEnergy(caloGrid, iEta + etaIndex, iPhi + phiIndex)));
+            }
           }
         }
       }
-
       if (isLocalMaximum)
       {
         seeds.emplace_back(std::make_tuple(iEta, iPhi));
