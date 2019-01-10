@@ -18,83 +18,12 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
-#process.source = process.source = cms.Source("PoolSource",
-#  fileNames = cms.untracked.vstring('file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD/GeneratePfClustersAndCandidatesFromQCD_3715975.0.root')
-#)
-
 process.source = process.source = cms.Source("PoolSource",
-  fileNames = cms.untracked.vstring(
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD_PU200/GeneratePfClustersAndCandidatesFromQCD_PU200_3720957.0.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD_PU200/GeneratePfClustersAndCandidatesFromQCD_PU200_3720957.100.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD_PU200/GeneratePfClustersAndCandidatesFromQCD_PU200_3720957.101.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD_PU200/GeneratePfClustersAndCandidatesFromQCD_PU200_3720957.102.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD_PU200/GeneratePfClustersAndCandidatesFromQCD_PU200_3720957.103.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD_PU200/GeneratePfClustersAndCandidatesFromQCD_PU200_3720957.104.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD_PU200/GeneratePfClustersAndCandidatesFromQCD_PU200_3720957.105.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/GeneratePfClustersAndCandidatesFromQCD_PU200/GeneratePfClustersAndCandidatesFromQCD_PU200_3720957.106.root",
-  )
+  fileNames = cms.untracked.vstring()
 )
 
 process.TFileService = cms.Service('TFileService', fileName = cms.string("Histograms.root"))
 #process.source.skipEvents = cms.untracked.uint32(1)
-
-ak4JetFromPfClustersParameters = deepcopy(GenJetParameters)
-ak4JetFromPfCandidatesParameters = deepcopy(GenJetParameters)
-
-#GenJetParameters.src = cms.InputTag("genParticles", "", "HLT")
-
-ak4JetFromPfClustersParameters.src = cms.InputTag("pfClustersFromCombinedCalo", "calibrated", "IN")
-process.ak4GenJetFromPfClusters = cms.EDProducer(
-    "FastjetJetProducer",
-    ak4JetFromPfClustersParameters,
-    AnomalousCellParameters,
-    jetAlgorithm = cms.string("AntiKt"),
-    rParam       = cms.double(0.4),
-    jetCollInstanceName = cms.string("ak4GenJetFromPfClusters")
-)
-
-ak4JetFromPfCandidatesParameters.src = cms.InputTag("l1pfProducer", "PF", "IN")
-process.ak4GenJetFromPfCandidates = cms.EDProducer(
-    "FastjetJetProducer",
-    ak4JetFromPfCandidatesParameters,
-    AnomalousCellParameters,
-    jetAlgorithm = cms.string("AntiKt"),
-    rParam       = cms.double(0.4),
-    jetCollInstanceName = cms.string("ak4GenJetFromPfCandidates")
-)
-
-process.ConvertGenJetToCaloJet = cms.EDProducer('ConvertGenJetToCaloJet',
-  ak4GenJetFromPfClustersCollectionTag = cms.InputTag("ak4GenJetFromPfClusters", "ak4GenJetFromPfClusters", "L1TJetPhase1Producer"),
-  ak4GenJetFromPfCandidatesCollectionTag = cms.InputTag("ak4GenJetFromPfCandidates", "ak4GenJetFromPfCandidates", "L1TJetPhase1Producer"),
-)
-
-process.Phase1L1TJetFromPfCandidatesProducer = cms.EDProducer('L1TJetPhase1Producer',
-  inputCollectionTag = ak4JetFromPfCandidatesParameters.src,
-  etaBinning = caloEtaSegmentation,
-  nBinsPhi = cms.uint32(72),
-  phiLow = cms.double(-pi),
-  phiUp = cms.double(pi),
-  jetIEtaSize = cms.uint32(9),
-  jetIPhiSize = cms.uint32(9),
-  seedPtThreshold = cms.double(4), # GeV
-  puSubtraction = cms.bool(True),
-  outputCollectionName = cms.string("Phase1L1TJetFromPfCandidates"),
-  vetoZeroPt = cms.bool(True)
-)
-
-process.Phase1L1TJetFromPfClustersProducer = cms.EDProducer('L1TJetPhase1Producer',
-  inputCollectionTag = ak4JetFromPfClustersParameters.src,
-  etaBinning = caloEtaSegmentation,
-  nBinsPhi = cms.uint32(72),
-  phiLow = cms.double(-pi),
-  phiUp = cms.double(pi),
-  jetIEtaSize = cms.uint32(9),
-  jetIPhiSize = cms.uint32(9),
-  seedPtThreshold = cms.double(4), # GeV
-  puSubtraction = cms.bool(True),
-  outputCollectionName = cms.string("Phase1L1TJetFromPfClusters"),
-  vetoZeroPt = cms.bool(True)
-)
 
 with open('JetCalibration/Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters_PU200_PUSubtraction_NoZeroPtJets.pickle', 'rb') as f:
   Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters = pkl.load(f)
