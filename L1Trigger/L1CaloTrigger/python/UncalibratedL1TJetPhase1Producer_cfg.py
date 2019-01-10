@@ -11,7 +11,7 @@ import FWCore.ParameterSet.Config as cms
 from RecoJets.JetProducers.GenJetParameters_cfi import *
 from RecoJets.JetProducers.AnomalousCellParameters_cfi import *
 
-process = cms.Process("L1TJetPhase1Producer")
+process = cms.Process("UncalibratedL1TJetPhase1Producer")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
@@ -153,8 +153,6 @@ process.out = cms.OutputModule("PoolOutputModule",
   fileName = cms.untracked.string('myOutputFile.root'),
   outputCommands = cms.untracked.vstring(
     "keep *",
-    "drop *_*_ak4GenJetFromPfCandidates_*",
-    "drop *_*_ak4GenJetFromPfClusters_*"
   ),
 )
 
