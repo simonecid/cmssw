@@ -5,6 +5,7 @@ __init__.py
 .#*
 _*
 *.root
+*.pickle
 #*#
 *~
 .vscode
