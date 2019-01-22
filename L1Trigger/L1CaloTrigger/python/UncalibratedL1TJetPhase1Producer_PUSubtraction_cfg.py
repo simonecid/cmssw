@@ -10,7 +10,7 @@ import FWCore.ParameterSet.Config as cms
 from RecoJets.JetProducers.GenJetParameters_cfi import *
 from RecoJets.JetProducers.AnomalousCellParameters_cfi import *
 
-process = cms.Process("UncalibratedL1TJetPhase1Producer")
+process = cms.Process("UncalibratedL1TJetPhase1ProducerPUSubtraction")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
@@ -63,8 +63,8 @@ process.ak4GenJetFromPfCandidates = cms.EDProducer(
 )
 
 process.ConvertGenJetToCaloJet = cms.EDProducer('ConvertGenJetToCaloJet',
-  ak4GenJetFromPfClustersCollectionTag = cms.InputTag("ak4GenJetFromPfClusters", "ak4GenJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
-  ak4GenJetFromPfCandidatesCollectionTag = cms.InputTag("ak4GenJetFromPfCandidates", "ak4GenJetFromPfCandidates", "UncalibratedL1TJetPhase1Producer"),
+  ak4GenJetFromPfClustersCollectionTag = cms.InputTag("ak4GenJetFromPfClusters", "ak4GenJetFromPfClusters", "UncalibratedL1TJetPhase1ProducerPUSubtraction"),
+  ak4GenJetFromPfCandidatesCollectionTag = cms.InputTag("ak4GenJetFromPfCandidates", "ak4GenJetFromPfCandidates", "UncalibratedL1TJetPhase1ProducerPUSubtraction"),
 )
 
 process.Phase1L1TJetFromPfCandidatesProducer = cms.EDProducer('L1TJetPhase1Producer',
@@ -76,7 +76,7 @@ process.Phase1L1TJetFromPfCandidatesProducer = cms.EDProducer('L1TJetPhase1Produ
   jetIEtaSize = cms.uint32(9),
   jetIPhiSize = cms.uint32(9),
   seedPtThreshold = cms.double(4), # GeV
-  puSubtraction = cms.bool(False),
+  puSubtraction = cms.bool(True),
   outputCollectionName = cms.string("Phase1L1TJetFromPfCandidates"),
   vetoZeroPt = cms.bool(True)
 )
@@ -90,29 +90,29 @@ process.Phase1L1TJetFromPfClustersProducer = cms.EDProducer('L1TJetPhase1Produce
   jetIEtaSize = cms.uint32(9),
   jetIPhiSize = cms.uint32(9),
   seedPtThreshold = cms.double(4), # GeV
-  puSubtraction = cms.bool(False),
+  puSubtraction = cms.bool(True),
   outputCollectionName = cms.string("Phase1L1TJetFromPfClusters"),
   vetoZeroPt = cms.bool(True)
 )
 
 process.MatchAK4GenJetWithPhase1L1TJetFromPfClusters = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  caloJetCollectionTag = cms.InputTag("Phase1L1TJetFromPfClustersProducer", "Phase1L1TJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("Phase1L1TJetFromPfClustersProducer", "Phase1L1TJetFromPfClusters", "UncalibratedL1TJetPhase1ProducerPUSubtraction"),
 )
 
 process.MatchAK4GenJetWithPhase1L1TJetFromPfCandidates = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  caloJetCollectionTag = cms.InputTag("Phase1L1TJetFromPfCandidatesProducer", "Phase1L1TJetFromPfCandidates", "UncalibratedL1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("Phase1L1TJetFromPfCandidatesProducer", "Phase1L1TJetFromPfCandidates", "UncalibratedL1TJetPhase1ProducerPUSubtraction"),
 )
 
 process.MatchAK4GenJetWithAK4JetFromPfClusters = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  caloJetCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfClusters", "UncalibratedL1TJetPhase1ProducerPUSubtraction"),
 )
 
 process.MatchAK4GenJetWithAK4JetFromPfCandidates = cms.EDAnalyzer('MatchGenJetToRecoCaloJet',
   genJetCollectionTag = cms.InputTag("ak4GenJetsNoNu", "", "HLT"),
-  caloJetCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfCandidates", "UncalibratedL1TJetPhase1Producer"),
+  caloJetCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfCandidates", "UncalibratedL1TJetPhase1ProducerPUSubtraction"),
 )
 
 #process.p = cms.Path(process.ak4JetFromPfClusters + process.ak4JetFromPfCandidates + process.L1TJetPhase1Producer + process.MatchGenJetToRecoCaloJet)

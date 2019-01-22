@@ -1,0 +1,5 @@
+from L1Trigger.L1CaloTrigger.UncalibratedL1TJetPhase1Producer_PUSubtraction_cfg import *
+
+ak4JetFromPfClustersParameters.src = cms.InputTag("pfClustersFromCombinedCalo", "calibrated", "IN")
+ak4JetFromPfCandidatesParameters.src = cms.InputTag("l1pfProducer", "Puppi", "IN")
+
