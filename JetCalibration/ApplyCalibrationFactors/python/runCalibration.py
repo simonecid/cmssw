@@ -19,7 +19,7 @@ import os
 import sys
 import numpy as np
 import argparse
-import JetCalibration.ApplyCalibrationFactors.binning as binning
+import JetCalibration.ApplyCalibrationFactors.finer_binning as binning
 from binning import pairwise
 import JetCalibration.ApplyCalibrationFactors.common_utils as cu
 from math import sqrt, log
