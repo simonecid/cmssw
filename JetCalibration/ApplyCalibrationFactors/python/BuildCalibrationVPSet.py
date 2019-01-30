@@ -36,3 +36,10 @@ def BuildCalibrationVPSet(rootfile_path, etaBinning):
     pkl.dump(parameters, f, pkl.HIGHEST_PROTOCOL)
 
   return
+
+
+if __name__ == "__main__":
+    BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithAK4JetFromPfCandidates_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
+    BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithAK4JetFromPfClusters_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
+    BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfCandidates_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
+    BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
