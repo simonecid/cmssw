@@ -40,29 +40,31 @@ def pairwise(iterable):
 ############
 # PT BINS
 ############
-pt_bins = [20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250]
+#pt_bins = [20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250]
 # wider binning at higher pt for low stats regions
-pt_bins_wide = [20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250]
+#pt_bins_wide = [20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250]
                                     
-pt_bins_stage2_old = [20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250]
+#pt_bins_stage2_old = [20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250]
 # wider binning for high pt
 pt_bins_stage2 = [20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250]
+#pt_bins_stage2 = list(np.arange(10, 342, 4))
                                       
 # wider binning for HF
 pt_bins_stage2_hf = [20, 30, 40, 50, 60, 70, 80, 100, 125, 150, 175, 200, 250]
+#pt_bins_stage2_hf = list(np.arange(10, 342, 4))
                                          
 
 # 8 GeV bins for resolution plots
-pt_bins_8 = list(np.arange(14, 246, 8))
-pt_bins_8.append(250)
+#pt_bins_8 = list(np.arange(14, 246, 8))
+#pt_bins_8.append(250)
 # and wider ones for low stat bins
-pt_bins_8_wide = list(np.concatenate((np.arange(14, 54, 8),
-                                      np.arange(54, 242, 20))))
-pt_bins_8_wide.append(250)
+#pt_bins_8_wide = list(np.concatenate((np.arange(14, 54, 8),
+#                                      np.arange(54, 242, 20))))
+#pt_bins_8_wide.append(250)
 
 # pt bins for doing checkCalibration.py
 # check_pt_bins = [[0, 20], [20, 40], [40, 60], [60, 80], [80, 120], [120, 200], [200, 300], [300, 500], [500, 1000]]
-check_pt_bins = [[0, 20], [20, 30], [30, 40], [40, 50], [50, 60], [60, 80], [80, 100], [100, 300], [300, 500], [500, 1000]]  # for HTT studies, focussing on low pt
+#check_pt_bins = [[0, 20], [20, 30], [30, 40], [40, 50], [50, 60], [60, 80], [80, 100], [100, 300], [300, 500], [500, 1000]]  # for HTT studies, focussing on low pt
 
 ############
 # ETA BINS
@@ -120,7 +122,7 @@ check_pt_bins = [[0, 20], [20, 30], [30, 40], [40, 50], [50, 60], [60, 80], [80,
 # eta bins for the selected 16
 eta_bins = [0.000, 1.4, 3, 5.191] 
 
-eta_bins_all = [-5.191, -3, -1.4, 0.000, 1.4, 3, 5.191] 
+#eta_bins_all = [-5.191, -3, -1.4, 0.000, 1.4, 3, 5.191] 
 
 eta_bins_label = "_etaBinsSel16"
 # KEY (TT:ETA) chunks==bin
