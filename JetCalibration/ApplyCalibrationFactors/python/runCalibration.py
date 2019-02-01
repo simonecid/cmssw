@@ -13,15 +13,21 @@ python runCalibration.py -h
 
 Originally by Nick Wardle, modified(hacked to shreds) by Robin Aggleton
 """
-
 import ROOT
 import os
 import sys
 import numpy as np
 import argparse
-import JetCalibration.ApplyCalibrationFactors.finer_binning as binning
-from binning import pairwise
-import JetCalibration.ApplyCalibrationFactors.common_utils as cu
+try:
+    import JetCalibration.ApplyCalibrationFactors.finer_binning as binning
+except ImportError:
+    import finer_binning as binning
+try:
+    import JetCalibration.ApplyCalibrationFactors.common_utils as cu
+except ImportError:
+    import common_utils as cu
+
+pairwise = binning.pairwise
 from math import sqrt, log
 
 
