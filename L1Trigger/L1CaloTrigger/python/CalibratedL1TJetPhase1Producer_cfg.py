@@ -34,13 +34,13 @@ process.source = process.source = cms.Source("PoolSource",
 process.TFileService = cms.Service('TFileService', fileName = cms.string("Histograms.root"))
 #process.source.skipEvents = cms.untracked.uint32(1)
 
-with open('JetCalibration/Calibration_MatchAK4GenJetWithAK4JetFromPfClusters_PU200_NoZeroPtJets.pickle', 'rb') as f:
+with open('/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/CalibrationFactors/Calibration_Trees_Calibration_PUSubtractionBranch_PU200_Puppi_NoZeroPtJets_MatchAK4GenJetWithAK4JetFromPfClusters.pickle', 'rb') as f:
   Calibration_MatchAK4GenJetWithAK4JetFromPfClusters = pkl.load(f)
-with open('JetCalibration/Calibration_MatchAK4GenJetWithAK4JetFromPfCandidates_PU200_NoZeroPtJets.pickle', 'rb') as f:
+with open('/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/CalibrationFactors/Calibration_Trees_Calibration_PU200_Puppi_NoZeroPtJets_MatchAK4GenJetWithAK4JetFromPfCandidates.pickle', 'rb') as f:
   Calibration_MatchAK4GenJetWithAK4JetFromPfCandidates = pkl.load(f)
-with open('JetCalibration/Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters_PU200_NoZeroPtJets.pickle', 'rb') as f:
+with open('/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/CalibrationFactors/Calibration_Trees_Calibration_PU200_Puppi_NoZeroPtJets_MatchAK4GenJetWithPhase1L1TJetFromPfClusters.pickle', 'rb') as f:
   Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters = pkl.load(f)
-with open('JetCalibration/Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfCandidates_PU200_NoZeroPtJets.pickle', 'rb') as f:
+with open('/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/CalibrationFactors/Calibration_Trees_Calibration_PU200_Puppi_NoZeroPtJets_MatchAK4GenJetWithPhase1L1TJetFromPfCandidates.pickle', 'rb') as f:
   Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfCandidates = pkl.load(f)
 
 process.CalibratePhase1L1TJetFromPfClusters = cms.EDProducer('ApplyCalibrationFactors',
