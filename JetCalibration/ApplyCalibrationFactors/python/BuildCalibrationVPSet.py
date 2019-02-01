@@ -3,7 +3,7 @@ import os
 import pickle as pkl
 from sys import argv
 
-def BuildCalibrationVPSet(rootfile_path, etaBinning):
+def BuildCalibrationVPSet(rootfile_path, etaBinning, outputfile_path):
 
   from ROOT import TFile
   parameters = cms.VPSet()
@@ -32,14 +32,15 @@ def BuildCalibrationVPSet(rootfile_path, etaBinning):
 
   tfile.Close()
 
-  with open(os.path.splitext(rootfile_path)[0] + '.pickle', 'wb') as f:
+  with open(outputfile_path, 'wb') as f:
     pkl.dump(parameters, f, pkl.HIGHEST_PROTOCOL)
 
   return
 
 
 if __name__ == "__main__":
-    BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithAK4JetFromPfCandidates_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
-    BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithAK4JetFromPfClusters_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
-    BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfCandidates_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
-    BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
+  pass
+    #BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithAK4JetFromPfCandidates_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
+    #BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithAK4JetFromPfClusters_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
+    #BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfCandidates_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
+    #BuildCalibrationVPSet("JetCalibration/Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters_PU200_NoZeroPtJets_FinerGranularity.root", [0, 1.4, 3, 5.191])
