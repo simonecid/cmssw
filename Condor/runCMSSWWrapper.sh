@@ -63,7 +63,7 @@ scram b
 
 mkdir __output
 
-cmsRun CMSSWJobDriver.py blockIndex=${processId} numberOfBlocks=${numberOfJobs} outputFile=__output/${OUTPUT_FILENAME} cfgFile=${inputFile} inputFiles=${SAMPLE_FILE}
+cmsRun Condor/CMSSWJobDriver.py blockIndex=${processId} numberOfBlocks=${numberOfJobs} outputFile=__output/${OUTPUT_FILENAME} cfgFile=${inputFile} inputFiles=${SAMPLE_FILE}
 
 echo "Will save on" /user/sb17498/CMS_Phase_2/jetMETStudies/${HDFS_DEST}
 
