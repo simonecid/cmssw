@@ -1,5 +1,4 @@
 import FWCore.ParameterSet.Config as cms
-from L1Trigger.L1CaloTrigger.caloEtaSegmentation import caloEtaSegmentation
 from math import pi
 from copy import deepcopy
 
@@ -19,15 +18,15 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.source = process.source = cms.Source("PoolSource",
   fileNames = cms.untracked.vstring(
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_3738062.337.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_3738062.32.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_3738062.46.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_3738062.475.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_3738062.457.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_3738062.382.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_3738062.374.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_3738062.184.root",
-    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_3738062.63.root",
+    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_3742478.337.root",
+    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_3742478.32.root",
+    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_3742478.46.root",
+    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_3742478.475.root",
+    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_3742478.457.root",
+    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_3742478.382.root",
+    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_3742478.374.root",
+    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_3742478.184.root",
+    "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_3742478.63.root",
   )
 )
 
@@ -45,28 +44,28 @@ with open('/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/CalibrationFactors/Calib
 
 process.CalibratePhase1L1TJetFromPfClusters = cms.EDProducer('ApplyCalibrationFactors',
   inputCollectionTag = cms.InputTag("Phase1L1TJetFromPfClustersProducer", "Phase1L1TJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
-  absEtaBinning = cms.vdouble(0, 1.4, 3, 6),
+  absEtaBinning = cms.vdouble([p.etaMin.value() for p in Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters] + [Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters[-1].etaMax.value()]),
   calibration = Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfClusters,
   outputCollectionName = cms.string("CalibratedPhase1L1TJetFromPfClusters")
 )
 
 process.CalibratePhase1L1TJetFromPfCandidates = cms.EDProducer('ApplyCalibrationFactors',
    inputCollectionTag = cms.InputTag("Phase1L1TJetFromPfCandidatesProducer", "Phase1L1TJetFromPfCandidates", "UncalibratedL1TJetPhase1Producer"),
-   absEtaBinning = cms.vdouble(0, 1.4, 3, 6),
+   absEtaBinning = cms.vdouble([p.etaMin.value() for p in Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfCandidates] + [Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfCandidates[-1].etaMax.value()]),
    calibration = Calibration_MatchAK4GenJetWithPhase1L1TJetFromPfCandidates,
    outputCollectionName = cms.string("CalibratedPhase1L1TJetFromPfCandidates")
 )
 
 process.CalibrateAK4JetFromPfClusters = cms.EDProducer('ApplyCalibrationFactors',
    inputCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfClusters", "UncalibratedL1TJetPhase1Producer"),
-   absEtaBinning = cms.vdouble(0, 1.4, 3, 6),
+   absEtaBinning = cms.vdouble([p.etaMin.value() for p in Calibration_MatchAK4GenJetWithAK4JetFromPfClusters] + [Calibration_MatchAK4GenJetWithAK4JetFromPfClusters[-1].etaMax.value()]),
    calibration = Calibration_MatchAK4GenJetWithAK4JetFromPfClusters,
    outputCollectionName = cms.string("CalibratedAK4JetFromPfClusters")
 )
 
 process.CalibrateAK4JetFromPfCandidates = cms.EDProducer('ApplyCalibrationFactors',
    inputCollectionTag = cms.InputTag("ConvertGenJetToCaloJet", "ak4CaloJetFromPfCandidates", "UncalibratedL1TJetPhase1Producer"),
-   absEtaBinning = cms.vdouble(0, 1.4, 3, 6),
+   absEtaBinning = cms.vdouble([p.etaMin.value() for p in Calibration_MatchAK4GenJetWithAK4JetFromPfCandidates] + [Calibration_MatchAK4GenJetWithAK4JetFromPfCandidates[-1].etaMax.value()]),
    calibration = Calibration_MatchAK4GenJetWithAK4JetFromPfCandidates,
    outputCollectionName = cms.string("CalibratedAK4JetFromPfCandidates")
 )
