@@ -27,7 +27,7 @@ for InputFile in InputFiles:
 """Universe = vanilla
 job = {JobName}
 cmd = JetCalibration/ApplyCalibrationFactors/python/runCalibration.py
-args= --no-correction-fit --stage2 --treeName {TreeName} {InputFile} {OutputFile}
+args= --no-correction-fit --stage2 --treeName {TreeName} {InputFile} $(job)_$(cluster).$(process).root
 transfer_input_files = JetCalibration/ApplyCalibrationFactors/python/finer_binning.py,JetCalibration/ApplyCalibrationFactors/python/common_utils.py,JetCalibration/ApplyCalibrationFactors/python/__init__.py
 # Better not to put logs in the same folder, as they are plenty
 output = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).out
@@ -42,7 +42,7 @@ request_cpus = 1
 request_memory = 2000
 request_disk = 3000000
 
-queue 1""".format(JobName=JobName, TreeName=TreeName, InputFile=InputFile, OutputFile=JobName+".root")
+queue 1""".format(JobName=JobName, TreeName=TreeName, InputFile=InputFile)
 
     print "Submitting", JobName + ":\n" + jobDescription + "\n-----------------------"
     
