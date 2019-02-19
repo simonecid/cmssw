@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import tempfile
 
 TreeNames = [
              "MatchAK4GenJetWithAK4JetFromPfClusters",
@@ -9,21 +10,19 @@ TreeNames = [
              "MatchAK4GenJetWithPhase1L1TJetFromPfCandidates",
 ]
 InputFiles = [
-            "/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets/Trees_Calibration_PU200_Puppi_NoZeroPtJets.root",
-            "/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/Trees_Calibration_PU200_Puppi_NoZeroPtJets_FinerGranularity.root",
-            "/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/Trees_Calibration_PUSubtractionBranch_PU200_Puppi_NoZeroPtJets.root",
+            "/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_0.4Square/Tree_Calibration_QCD_PU200_Puppi_NoZeroPTJets_0.4Square.root",
+            #"/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_FinerGranularity/Trees_Calibration_PU200_Puppi_NoZeroPtJets_FinerGranularity.root",
+            #"/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PUSubtractionBranch_PU200_Puppi_NoZeroPTJets/Trees_Calibration_PUSubtractionBranch_PU200_Puppi_NoZeroPtJets.root",
 ]
-
-tmpFileName = "/tmp/sb17498_tmpjob.job"
 
 for InputFile in InputFiles:
   for TreeName in TreeNames:
   
+    fd, path = tempfile.mkstemp()
     JobName = "Calibration_" + os.path.splitext(os.path.basename(InputFile))[0] + "_" + TreeName
 
-    tmpJob = open(tmpFileName, "w")
-
-    jobDescription =  \
+    with os.fdopen(fd, 'w') as tmp: 
+      jobDescription =  \
 """Universe = vanilla
 job = {JobName}
 cmd = JetCalibration/ApplyCalibrationFactors/python/runCalibration.py
@@ -44,10 +43,10 @@ request_disk = 3000000
 
 queue 1""".format(JobName=JobName, TreeName=TreeName, InputFile=InputFile)
 
-    print "Submitting", JobName + ":\n" + jobDescription + "\n-----------------------"
-    
-    tmpJob.write(jobDescription)
-    tmpJob.close()
-    os.system("condor_submit " + tmpFileName)
+      print "Submitting", JobName + ":\n" + jobDescription + "\n-----------------------"
+      
+      tmp.write(jobDescription)
+      tmp.close()
+      os.system("condor_submit " + path)
 
 
