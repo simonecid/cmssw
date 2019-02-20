@@ -1,5 +1,5 @@
 Universe = vanilla
-job = ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_0.8Square
+job = ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_FinerGranularity_0.4Square
 cmd = Condor/runCMSSWWrapper.sh
 args= -n 595 -j $(job) -c $(cluster) -p $(process) -i L1Trigger/L1CaloTrigger/python/UncalibratedL1TJetPhase1Producer_PUPPISrc_FinerGranularity_cfg.py -d ComputeUncalibratedPhase1AndAK4L1TJetsFromPfClustersAndCandidates_QCD_PU200_Puppi_NoZeroPTJets_0.4Square -s Condor/QCD_Pt-0to1000_Tune4C_14TeV_pythia8_PU200_CandidateAndClustersPrimitives.txt -b L1PF_CMSSW_JetClustering
 # Better not to put logs in the same folder, as they are plenty
