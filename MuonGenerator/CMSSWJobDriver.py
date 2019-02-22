@@ -3,6 +3,9 @@ from copy import deepcopy
 import FWCore.ParameterSet.VarParsing as VarParsing
 import FWCore.ParameterSet.Config as cms
 
+def cantor(k1, k2):
+  return ((k1 + k2) * (k1 + k2 + 1)) / 2 + k2
+
 '''
 #DEBUG
 cfgFile = "FastPUPPI/NtupleProducer/python/runNewInputs.py"
@@ -29,16 +32,16 @@ def splitInBlocks (aList, numberOfBlocks):
   return blocks
 
 options = VarParsing.VarParsing('analysis')
-options.register('blockIndex',
+options.register('clusterId',
                  0,  # default value
                  VarParsing.VarParsing.multiplicity.singleton,  # singleton or list
                  VarParsing.VarParsing.varType.int,          # string, int, or float
-                 "Block index to process")
-options.register('numberOfBlocks',
-                 1,  # default value
+                 "Cluster index")
+options.register('processId',
+                 0,  # default value
                  VarParsing.VarParsing.multiplicity.singleton,  # singleton or list
                  VarParsing.VarParsing.varType.int,          # string, int, or float
-                 "Number of block in which the source must be splitted")
+                 "Process index")
 options.outputFile = 'output.root'
 options.register('cfgFile',
                  "",  # default value
@@ -57,15 +60,15 @@ processModule = load_source(
 
 process = processModule.process                     
 
-#Loading the python module containing the source files that will be splitted
+# Loading the python module containing the source files that will be splitted
 '''CMSSW source to be splitted'''
-if len(options.inputFiles > 0):
+if len(options.inputFiles) > 0:
   inputFiles = open(options.inputFiles[0])
   process.source.fileNames = cms.untracked.vstring(inputFiles.readlines())
   inputFiles.close()
-
-  #Splitting the source and reassigning the correct chunk to source
+  # Splitting the source and reassigning the correct chunk to source
   process.source.fileNames = splitInBlocks(process.source.fileNames, options.numberOfBlocks)[options.blockIndex]
+
 
 #Setting output file name 
 if options.outputFile != "":
@@ -73,3 +76,11 @@ if options.outputFile != "":
   if hasattr(process, "TFileService"):
     #if it has a fileservice we use the output file name without extension as a prefix
     process.TFileService.fileName = cms.string(options.outputFile.replace(".root", "") + "_" + process.TFileService.fileName.value())
+
+from IOMC.RandomEngine.RandomServiceHelper import RandomNumberServiceHelper
+randSvc = RandomNumberServiceHelper(process.RandomNumberGeneratorService)
+k1 = options.clusterId
+k2 = options.processId
+seed = cantor(k1, k2) % (2**32)
+seedList = [seed] * randSvc.countSeeds()
+randSvc.insertSeeds(*seedList)
