@@ -8,9 +8,7 @@ error = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).err
 log = /six/sb17498/logs/CMSSW/$(job)_$(cluster).$(process).log
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT_OR_EVICT
-+SingularityImage: "/cvmfs/singularity.opensciencegrid.org/kreczko/workernode:centos7",
-
-use_x509userproxy = true
++SingularityImage = "/cvmfs/singularity.opensciencegrid.org/kreczko/workernode:centos7"
 
 request_cpus = 1
 request_memory = 2000
