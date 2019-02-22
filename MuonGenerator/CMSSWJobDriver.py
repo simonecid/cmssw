@@ -81,6 +81,6 @@ from IOMC.RandomEngine.RandomServiceHelper import RandomNumberServiceHelper
 randSvc = RandomNumberServiceHelper(process.RandomNumberGeneratorService)
 k1 = options.clusterId
 k2 = options.processId
-seed = cantor(k1, k2) % (2**32)
+seed = cantor(k1, k2) % (900000000)
 seedList = [seed] * randSvc.countSeeds()
 randSvc.insertSeeds(*seedList)
