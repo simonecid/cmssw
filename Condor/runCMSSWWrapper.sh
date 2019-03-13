@@ -44,28 +44,29 @@ source /cvmfs/cms.cern.ch/cmsset_default.sh
 
 set -o xtrace
 
-cmsrel CMSSW_10_1_5
-rm -r CMSSW_10_1_5/src
-mkdir CMSSW_tmp 
+cmsrel CMSSW_9_0_0
+#rm -r CMSSW_10_1_5/src
+#mkdir CMSSW_tmp 
 
-/usr/bin/hdfs dfs -copyToLocal /user/sb17498/software/CMSSW_10_1_5.tar.gz CMSSW_tmp
-cd CMSSW_tmp
-tar xzvf CMSSW_10_1_5.tar.gz
-mv CMSSW_10_1_5/src ../CMSSW_10_1_5/src
-cd ..
+#/usr/bin/hdfs dfs -copyToLocal /user/sb17498/software/CMSSW_10_1_5.tar.gz CMSSW_tmp
+#cd CMSSW_tmp
+#tar xzvf CMSSW_10_1_5.tar.gz
+#mv CMSSW_10_1_5/src ../CMSSW_10_1_5/src
+#cd ..
 
 
-cd CMSSW_10_1_5/src
+cd CMSSW_9_0_0/src
 cmsenv
-scramv1 b ProjectRename
-#git cms-merge-topic simonecid:${BRANCH}
+git cms-merge-topic simonecid:convolutionCurves_MuonMatch_GenMuonPropagation
+git cms-addpkg Condor
+git cms-addpkg L1TJetConvolutionCurves
 scram b
 
 mkdir __output
 
 cmsRun Condor/CMSSWJobDriver.py blockIndex=${processId} numberOfBlocks=${numberOfJobs} outputFile=__output/${OUTPUT_FILENAME} cfgFile=${inputFile} inputFiles=${SAMPLE_FILE}
 
-echo "Will save on" /user/sb17498/CMS_Phase_2/jetMETStudies/${HDFS_DEST}
+echo "Will save on" /FCC-hh/${HDFS_DEST}
 
 /usr/bin/hdfs dfs -mkdir -p /user/sb17498/CMS_Phase_2/jetMETStudies/${HDFS_DEST}
 /usr/bin/hdfs dfs -moveFromLocal __output/* /user/sb17498/CMS_Phase_2/jetMETStudies/${HDFS_DEST}
