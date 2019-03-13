@@ -68,7 +68,7 @@ cmsRun Condor/CMSSWJobDriver.py blockIndex=${processId} numberOfBlocks=${numberO
 
 echo "Will save on" /FCC-hh/${HDFS_DEST}
 
-/usr/bin/hdfs dfs -mkdir -p /user/sb17498/CMS_Phase_2/jetMETStudies/${HDFS_DEST}
-/usr/bin/hdfs dfs -moveFromLocal __output/* /user/sb17498/CMS_Phase_2/jetMETStudies/${HDFS_DEST}
+/usr/bin/hdfs dfs -mkdir -p /FCC-hh/${HDFS_DEST}
+/usr/bin/hdfs dfs -moveFromLocal __output/* /FCC-hh/${HDFS_DEST}
 
 set +o xtrace
