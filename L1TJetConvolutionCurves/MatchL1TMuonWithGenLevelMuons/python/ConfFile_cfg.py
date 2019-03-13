@@ -16,28 +16,14 @@ process.GlobalTag = GlobalTag(
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1
 
-options = VarParsing.VarParsing ('analysis')
-options.register ('source',
-                  "", # default value
-                  VarParsing.VarParsing.multiplicity.singleton, # singleton or list
-                  VarParsing.VarParsing.varType.string,          # string, int, or float
-                  "Source sample")
-options.register ('sourceFile',
-                  "", # default value
-                  VarParsing.VarParsing.multiplicity.singleton, # singleton or list
-                  VarParsing.VarParsing.varType.string,          # string, int, or float
-                  "File containing the splitted sources")
-options.outputFile = 'MatchL1TMuonWithGenLevelMuons.root'
-options.source = "source_0"
-options.sourceFile = "source_QCD_Pt_15_3000_splitted"
-
-options.parseArguments()
-
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
-process.source = getattr(import_module("L1TJetConvolutionCurves.MatchGenJetWithL1Objects." + options.sourceFile), options.source)
+process.source = process.source = cms.Source("PoolSource",
+  fileNames = cms.untracked.vstring()
+)
+process.source.duplicateCheckMode = cms.untracked.string("noDuplicateCheck")
 
-process.TFileService = cms.Service('TFileService', fileName = cms.string(options.outputFile))
+process.TFileService = cms.Service('TFileService', fileName = cms.string("Histograms.root"))
 
 process.MatchL1TMuonWithGenLevelMuons = cms.EDAnalyzer('MatchL1TMuonWithGenLevelMuons',
   genParticleCollectionTag = cms.InputTag( "PropagateGenMuonAndGenJetsTo2ndMuonStation", "PropagatedGenMuons", "MatchL1TMuonWithGenLevelMuons"),
@@ -55,7 +41,6 @@ process.PropagateGenMuonAndGenJetsTo2ndMuonStation = cms.EDProducer('PropagateGe
     fallbackToME1 = cms.bool(False)
   )
 )
-
 
 process.p = cms.Path(process.PropagateGenMuonAndGenJetsTo2ndMuonStation *
                      process.MatchL1TMuonWithGenLevelMuons)
