@@ -68,7 +68,8 @@ process.source.fileNames = splitInBlocks(process.source.fileNames, options.numbe
 
 #Setting output file name 
 if options.outputFile != "":
-  process.out.fileName = options.outputFile
+  if hasattr(process, "out"):
+    process.out.fileName = options.outputFile
   if hasattr(process, "TFileService"):
     #if it has a fileservice we use the output file name without extension as a prefix
     process.TFileService.fileName = cms.string(options.outputFile.replace(".root", "") + "_" + process.TFileService.fileName.value())
