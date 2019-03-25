@@ -5,10 +5,14 @@
 // 
 /**\class ApplyCalibrationFactors ApplyCalibrationFactors.cc JetCalibration/ApplyCalibrationFactors/plugins/ApplyCalibrationFactors.cc
 
- Description: [one line class summary]
+ Description: Applies calibrations to reco::calojets
 
- Implementation:
-    [Notes on implementation]
+ *** INPUT PARAMETERS ***
+   * inputCollectionTag, InputTag, collection of reco calojet to calibrate
+   * absEtaBinning, vdouble with eta bins, allows for non-homogeneous binning
+   * calibration, VPSet with calibration factors
+   * outputCollectionName, string, output collection tag name
+
 */
 //
 // Original Author:  Simone Bologna
@@ -39,10 +43,6 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/StreamID.h"
 
-
-//
-// class declaration
-//
 
 class ApplyCalibrationFactors : public edm::stream::EDProducer<> {
   public:
