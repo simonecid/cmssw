@@ -162,45 +162,45 @@ phase2_SimL1Emulator += L1TkCaloTaus
 from L1Trigger.Phase2L1ParticleFlow.l1ParticleFlow_cff import *
 phase2_SimL1Emulator += l1ParticleFlow
 
-from L1Trigger.Phase2L1ParticleFlow.l1pfJetMet_cff import *
-# Describe here l1PFJets sequence
-# ###############################
-#l1PFJets = cms.Sequence(
-#  ak4PFL1Calo + ak4PFL1PF + ak4PFL1Puppi +
-#  ak4PFL1CaloCorrected + ak4PFL1PFCorrected + ak4PFL1PuppiCorrected)
-phase2_SimL1Emulator += l1PFJets
-# Describe here l1PFMets sequence
-# ###############################
-#l1PFMets = cms.Sequence(l1PFMetCalo + l1PFMetPF + l1PFMetPuppi)
-phase2_SimL1Emulator += l1PFMets
+# from L1Trigger.Phase2L1ParticleFlow.l1pfJetMet_cff import *
+# # Describe here l1PFJets sequence
+# # ###############################
+# #l1PFJets = cms.Sequence(
+# #  ak4PFL1Calo + ak4PFL1PF + ak4PFL1Puppi +
+# #  ak4PFL1CaloCorrected + ak4PFL1PFCorrected + ak4PFL1PuppiCorrected)
+# phase2_SimL1Emulator += l1PFJets
+# # Describe here l1PFMets sequence
+# # ###############################
+# #l1PFMets = cms.Sequence(l1PFMetCalo + l1PFMetPF + l1PFMetPuppi)
+# phase2_SimL1Emulator += l1PFMets
 
-# PFTaus(HPS)
-# ########################################################################
-from L1Trigger.Phase2L1Taus.L1PFTauProducer_cff import L1PFTauProducer
-l1pfTauProducer = L1PFTauProducer.clone()
-l1pfTauProducer.L1PFObjects = cms.InputTag("l1pfCandidates","PF")
-l1pfTauProducer.L1Neutrals = cms.InputTag("l1pfCandidates")
-phase2_SimL1Emulator += l1pfTauProducer
+# # PFTaus(HPS)
+# # ########################################################################
+# from L1Trigger.Phase2L1Taus.L1PFTauProducer_cff import L1PFTauProducer
+# l1pfTauProducer = L1PFTauProducer.clone()
+# l1pfTauProducer.L1PFObjects = cms.InputTag("l1pfCandidates","PF")
+# l1pfTauProducer.L1Neutrals = cms.InputTag("l1pfCandidates")
+# phase2_SimL1Emulator += l1pfTauProducer
 
-# NNTaus
-# ########################################################################
-from L1Trigger.Phase2L1Taus.L1NNTauProducer_cff import *
-l1NNTauProducer = L1NNTauProducer.clone()
-l1NNTauProducer.L1PFObjects = cms.InputTag("l1pfCandidates","PF")
-l1NNTauProducerPuppi = L1NNTauProducerPuppi.clone()
-l1NNTauProducerPuppi.L1PFObjects = cms.InputTag("l1pfCandidates","PF")
-phase2_SimL1Emulator += l1NNTauProducer
-phase2_SimL1Emulator += l1NNTauProducerPuppi
+# # NNTaus
+# # ########################################################################
+# from L1Trigger.Phase2L1Taus.L1NNTauProducer_cff import *
+# l1NNTauProducer = L1NNTauProducer.clone()
+# l1NNTauProducer.L1PFObjects = cms.InputTag("l1pfCandidates","PF")
+# l1NNTauProducerPuppi = L1NNTauProducerPuppi.clone()
+# l1NNTauProducerPuppi.L1PFObjects = cms.InputTag("l1pfCandidates","PF")
+# phase2_SimL1Emulator += l1NNTauProducer
+# phase2_SimL1Emulator += l1NNTauProducerPuppi
 
-# NNTaus
-# ########################################################################
-from L1Trigger.L1TTrackMatch.L1TkBsCandidateProducer_cfi import *
-l1TkBsCandidates = L1TkBsCandidates.clone()
-l1TkBsCandidatesLooseWP = L1TkBsCandidatesLooseWP.clone()
-l1TkBsCandidatesTightWP = L1TkBsCandidatesTightWP.clone()
-phase2_SimL1Emulator += l1TkBsCandidates
-phase2_SimL1Emulator += l1TkBsCandidatesLooseWP
-phase2_SimL1Emulator += l1TkBsCandidatesTightWP
+# # NNTaus
+# # ########################################################################
+# from L1Trigger.L1TTrackMatch.L1TkBsCandidateProducer_cfi import *
+# l1TkBsCandidates = L1TkBsCandidates.clone()
+# l1TkBsCandidatesLooseWP = L1TkBsCandidatesLooseWP.clone()
+# l1TkBsCandidatesTightWP = L1TkBsCandidatesTightWP.clone()
+# phase2_SimL1Emulator += l1TkBsCandidates
+# phase2_SimL1Emulator += l1TkBsCandidatesLooseWP
+# phase2_SimL1Emulator += l1TkBsCandidatesTightWP
 
 from Configuration.Eras.Modifier_phase2_trigger_cff import phase2_trigger
 phase2_trigger.toReplaceWith( SimL1Emulator , phase2_SimL1Emulator)
