@@ -76,6 +76,8 @@ l1pfProducerBarrel = l1pfProducer.clone(
     vtxAlgo = "external",
     vtxCollection = cms.InputTag("VertexProducer","l1vertices"),
     # puppi tuning
+    genOrigin = cms.InputTag("genParticles", "xyz0"),
+    dumpFileName = cms.untracked.string("barrel_dump.dump"),
     puAlgo = "LinearizedPuppi",
     puppiEtaCuts            = cms.vdouble( 1.6 ), # just one bin
     puppiPtCuts             = cms.vdouble( 1.0 ),
@@ -93,13 +95,31 @@ l1pfProducerBarrel = l1pfProducer.clone(
     puppiPriors             = cms.vdouble( 5.0 ),
     puppiPriorsPhotons      = cms.vdouble( 1.0 ),
     # regionalize
-    useRelativeRegionalCoordinates = cms.bool(False),
+    useRelativeRegionalCoordinates = cms.bool(True),
     trackRegionMode = cms.string("atCalo"),
     regions = cms.VPSet(
         cms.PSet(
-            etaBoundaries = cms.vdouble(-1.5,1.5),
-            phiSlices = cms.uint32(1),
-            etaExtra = cms.double(0.3),
+            etaBoundaries = cms.vdouble(-1.5,-0.75),
+            phiSlices = cms.uint32(9),
+            etaExtra = cms.double(0),
+            phiExtra = cms.double(0.0)
+        ),
+        cms.PSet(
+            etaBoundaries = cms.vdouble(-0.75,0),
+            phiSlices = cms.uint32(9),
+            etaExtra = cms.double(0),
+            phiExtra = cms.double(0.0)
+        ),
+        cms.PSet(
+            etaBoundaries = cms.vdouble(0,0.75),
+            phiSlices = cms.uint32(9),
+            etaExtra = cms.double(0),
+            phiExtra = cms.double(0.0)
+        ),
+        cms.PSet(
+            etaBoundaries = cms.vdouble(0.75,1.5),
+            phiSlices = cms.uint32(9),
+            etaExtra = cms.double(0),
             phiExtra = cms.double(0.0)
         ),
     ),
