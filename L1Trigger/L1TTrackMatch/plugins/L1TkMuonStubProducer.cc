@@ -77,6 +77,8 @@ private:
                           const edm::Handle<L1TTTrackCollectionType>&,
                           L1TkMuonParticleCollection& tkMuons) const;
 
+  void cleanStubs(const EMTFHitCollection &, EMTFHitCollection &) const;
+
   // int emtfMatchAlgoVersion_ ;         
   AlgoType emtfMatchAlgoVersion_ ;         
 
@@ -118,10 +120,14 @@ L1TkMuonStubProducer::L1TkMuonStubProducer(const edm::ParameterSet& iConfig) :
       std::string fIn_bounds_name = iConfig.getParameter<edm::FileInPath>("emtfcorr_boundaries").fullPath();
       std::string fIn_theta_name  = iConfig.getParameter<edm::FileInPath>("emtfcorr_theta_windows").fullPath();
       std::string fIn_phi_name    = iConfig.getParameter<edm::FileInPath>("emtfcorr_phi_windows").fullPath();
+      std::string fIn_S1_theta_name  = iConfig.getParameter<edm::FileInPath>("emtfcorr_S1_theta_windows").fullPath();
+      std::string fIn_S1_phi_name    = iConfig.getParameter<edm::FileInPath>("emtfcorr_S1_phi_windows").fullPath();
       auto bounds = L1TkMuCorrDynamicWindows::prepare_corr_bounds(fIn_bounds_name.c_str(), "h_dphi_l");
       TFile* fIn_theta = TFile::Open (fIn_theta_name.c_str());
       TFile* fIn_phi   = TFile::Open (fIn_phi_name.c_str());
-      dwcorr_ = std::unique_ptr<L1TkMuCorrDynamicWindows> (new L1TkMuCorrDynamicWindows(bounds, fIn_theta, fIn_phi));
+      TFile* fIn_S1_theta = TFile::Open (fIn_theta_name.c_str());
+      TFile* fIn_S1_phi   = TFile::Open (fIn_phi_name.c_str());
+      dwcorr_ = std::unique_ptr<L1TkMuCorrDynamicWindows> (new L1TkMuCorrDynamicWindows(bounds, fIn_theta, fIn_phi, fIn_S1_theta, fIn_S1_phi));
 
       // files can be closed since the correlator code clones the TF1s
       fIn_theta->Close();
@@ -192,6 +198,16 @@ L1TkMuonStubProducer::runOnMuonHitCollection(const edm::Handle<EMTFHitCollection
 
 {
   const EMTFHitCollection& l1muStubs = (*muonStubH.product());
+
+  // collection for cleaned stubs
+  EMTFHitCollection cleanedStubs;
+
+  // reserve to size of original coolection
+  cleanedStubs.reserve(l1muStubs.size());
+  
+  // fill collection of cleaned stubs
+  cleanStubs(l1muStubs, cleanedStubs);
+
   const L1TTTrackCollectionType& l1trks = (*l1tksH.product());
   auto corr_muStub_idxs = dwcorr_->find_match_stub(l1muStubs, l1trks, mu_stub_station_, requireBX0_);
   // it's a vector with as many entries as the L1TT vector.
@@ -211,6 +227,7 @@ L1TkMuonStubProducer::runOnMuonHitCollection(const edm::Handle<EMTFHitCollection
     const L1TTTrackType& matchTk = l1trks[il1ttrack];
     const auto& p3 = matchTk.getMomentum(dwcorr_->get_n_trk_par());
     const auto& tkv3 = matchTk.getPOCA(dwcorr_->get_n_trk_par());
+    const auto& curve = matchTk.getRInv( dwcorr_->get_n_trk_par());
     float p4e = sqrt(0.105658369*0.105658369 + p3.mag2() );
     math::XYZTLorentzVector l1tkp4(p3.x(), p3.y(), p3.z(), p4e);
 
@@ -220,6 +237,12 @@ L1TkMuonStubProducer::runOnMuonHitCollection(const edm::Handle<EMTFHitCollection
     L1TkMuonParticle l1tkmu(l1tkp4, l1muRef, l1tkPtr, trkisol);
     l1tkmu.setTrkzVtx( (float)tkv3.z() );
     
+    // Set curvature
+    l1tkmu.setTrackCurvature(curve);
+    //Set charge
+    int charge =  (curve > 0) ? 1 : -1;
+    l1tkmu.setCharge(charge);
+
     tkMuons.push_back(l1tkmu);
   }
 
@@ -236,6 +259,59 @@ L1TkMuonStubProducer::fillDescriptions(edm::ConfigurationDescriptions& descripti
   edm::ParameterSetDescription desc;
   desc.setUnknown();
   descriptions.addDefault(desc);
+}
+
+void 
+L1TkMuonStubProducer::cleanStubs(const EMTFHitCollection &  muStubs, EMTFHitCollection & cleanedStubs) const {
+
+    // if empty collection don't do anything
+    if(muStubs.size() == 0) return;
+    
+    // copy the first stub in the new collection
+    const EMTFHit & muStub = muStubs[0];
+    cleanedStubs.push_back(muStub);
+
+    for(uint ms = 0; ms < muStubs.size(); ms++) {
+
+      const EMTFHit & muStub = muStubs[ms];
+
+      int n_duplicate = 0;
+
+      for(uint i = 0; i <cleanedStubs.size(); i++) {
+
+        const EMTFHit & cStub = cleanedStubs[i];
+        int dSubsystem = cStub.Subsystem() - muStub.Subsystem();
+        int dStation = cStub.Station() - muStub.Station();
+        int dChamber = cStub.Chamber() - muStub.Chamber();
+        int dBend = cStub.Bend() - muStub.Bend();
+        float aDeltaPhi = abs(cStub.Phi_sim() * TMath::Pi()/180. - muStub.Phi_sim() * TMath::Pi()/180.);
+        //cout << "   aDeltaPhi = " << aDeltaPhi << endl;
+
+        // duplicate stubs defined as having same phi
+        if(aDeltaPhi < 0.0001 && dSubsystem == 0 && dStation == 0 && dChamber <= 1 && dBend == 0) {
+
+          n_duplicate++;
+
+        } // end if
+
+      } // end for cleaned
+
+      // did not find any duplicate stubs and the stub is not Neighbor
+      if(n_duplicate == 0 && muStub.Neighbor() == 0) {
+        cleanedStubs.push_back(muStub);
+      }
+
+    } // end for muStubs
+
+    /*
+    printf("----------------- Cleaned stubs ---------------------------------------------------- \n");
+    for(uint i = 0; i <cleanedStubs.size(); i++) {
+        const EMTFHit & cStub = cleanedStubs[i];
+        printStub(cStub);
+    }
+    printf("------------------------------------------------------------------------------- \n");
+    */
+
 }
 
 

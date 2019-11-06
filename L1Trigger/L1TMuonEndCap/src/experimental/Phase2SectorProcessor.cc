@@ -22,7 +22,7 @@ void Phase2SectorProcessor::configure(
     PtAssignmentEngine* pt_assign_engine,
     // Sector processor config
     int verbose, int endcap, int sector, int bx,
-    int bxShiftCSC, int bxShiftRPC, int bxShiftGEM,
+    int bxShiftCSC, int bxShiftRPC, int bxShiftGEM, int bxShiftME0,
     std::string era
 ) {
   assert(emtf::MIN_ENDCAP <= endcap && endcap <= emtf::MAX_ENDCAP);
@@ -46,6 +46,7 @@ void Phase2SectorProcessor::configure(
   bxShiftCSC_ = bxShiftCSC;
   bxShiftRPC_ = bxShiftRPC;
   bxShiftGEM_ = bxShiftGEM;
+  bxShiftME0_ = bxShiftME0;
 
   era_        = era;
 }
@@ -76,7 +77,7 @@ void Phase2SectorProcessor::process(
   PrimitiveSelection prim_sel;
   prim_sel.configure(
       verbose_, endcap_, sector_, bx_,
-      bxShiftCSC_, bxShiftRPC_, bxShiftGEM_,
+      bxShiftCSC_, bxShiftRPC_, bxShiftGEM_, bxShiftME0_,
       includeNeighbor, duplicateTheta,
       bugME11Dupes
   );
@@ -85,7 +86,7 @@ void Phase2SectorProcessor::process(
   prim_conv.configure(
       geom_, lut_,
       verbose_, endcap_, sector_, bx_,
-      bxShiftCSC_, bxShiftRPC_, bxShiftGEM_,
+      bxShiftCSC_, bxShiftRPC_, bxShiftGEM_, bxShiftME0_,
       zoneBoundaries, zoneOverlap,
       duplicateTheta, fixZonePhi, useNewZones, fixME11Edges,
       bugME11Dupes
@@ -113,11 +114,20 @@ void Phase2SectorProcessor::process(
   prim_sel.process(RPCTag(), muon_primitives, selected_rpc_map);
   prim_sel.process(GEMTag(), muon_primitives, selected_gem_map);
   prim_sel.process(ME0Tag(), muon_primitives, selected_me0_map);
-  prim_sel.merge(selected_dt_map, selected_csc_map, selected_rpc_map, selected_gem_map, selected_me0_map, selected_prim_map);
+  prim_sel.merge_no_truncate(selected_dt_map, selected_csc_map, selected_rpc_map, selected_gem_map, selected_me0_map, selected_prim_map);
 
   // Convert trigger primitives into "converted" hits
   // A converted hit consists of integer representations of phi, theta, and zones
   prim_conv.process(selected_prim_map, conv_hits);
+
+  {
+    // Clear the input maps to save memory
+    selected_dt_map.clear();
+    selected_csc_map.clear();
+    selected_rpc_map.clear();
+    selected_gem_map.clear();
+    selected_me0_map.clear();
+  }
 
   // ___________________________________________________________________________
   // Build
@@ -142,7 +152,7 @@ void Phase2SectorProcessor::process(
 
 constexpr int NLAYERS = 16;      // 5 (CSC) + 4 (RPC) + 3 (GEM) + 4 (DT)
 constexpr int NFEATURES = 36;    // NN features
-constexpr int NPREDICTIONS = 2;  // NN outputs: q/pT, PU discr
+constexpr int NPREDICTIONS = 9;  // NN outputs
 
 constexpr int PATTERN_BANK_NPT = 18;   // straightness
 constexpr int PATTERN_BANK_NETA = 7;   // zone
@@ -151,8 +161,8 @@ constexpr int PATTERN_BANK_NVARS = 3;  // min, med, max
 
 constexpr int PATTERN_X_CENTRAL = 31;  // pattern bin number 31 is the central
 constexpr int PATTERN_X_SEARCH_MIN = 33;
-//constexpr int PATTERN_X_SEARCH_MAX = 154-10;
-constexpr int PATTERN_X_SEARCH_MAX = 154-10+12;  // account for DT
+constexpr int PATTERN_X_SEARCH_MAX = 154-10;
+//constexpr int PATTERN_X_SEARCH_MAX = 154-10+12;  // account for DT
 
 
 class Hit {
@@ -190,22 +200,22 @@ public:
   }
 
   // Properties
-  int16_t type;
-  int16_t station;
-  int16_t ring;
-  int16_t endsec;
-  int16_t fr;
-  int16_t bx;
-  int32_t emtf_layer;
-  int32_t emtf_phi;
-  int32_t emtf_theta;
-  int32_t emtf_bend;
-  int32_t emtf_qual;
-  int32_t emtf_time;
-  int32_t old_emtf_phi;
-  int32_t old_emtf_bend;
-  int32_t sim_tp;
-  int32_t ref;
+  int16_t type;           // DT=0,CSC=1,RPC=2,GEM=3,ME0=4
+  int16_t station;        // 1 to 4
+  int16_t ring;           // 1 to 4
+  int16_t endsec;         // 0 to 5: endcap 1 sector 1-6; 6 to 11: endcap 2 sector 1-6
+  int16_t fr;             // 0: rear CSC chamber; 1: front CSC chamber
+  int16_t bx;             // -3 to 3
+  int32_t emtf_layer;     // 0 to 4: CSC stations; 5 to 8: RPC stations; 9 to 11: GEM stations; 12 to 15: DT stations
+  int32_t emtf_phi;       // 13-bit integer (0 to 8191)
+  int32_t emtf_theta;     // 7-bit integer (0 to 127)
+  int32_t emtf_bend;      // 6-bit integer (0 to 63) if no DT; 10-bit integer (-512 to 511) with DT
+  int32_t emtf_qual;      // 1 to 6: number of layers in CSC or ME0; includes sign: +/- for F/R
+  int32_t emtf_time;      // not currently used
+  int32_t old_emtf_phi;   // used only for sotfware
+  int32_t old_emtf_bend;  // used only for software
+  int32_t sim_tp;         // used only for software
+  int32_t ref;            // used only for software
 };
 
 class Road {
@@ -253,17 +263,17 @@ public:
   }
 
   // Properties
-  int16_t endcap;
-  int16_t sector;
-  int16_t ipt;
-  int16_t ieta;
-  int16_t iphi;
-  road_hits_t hits;
-  int16_t mode;
-  int16_t quality;
-  int16_t sort_code;
-  int32_t phi_median;
-  int32_t theta_median;
+  int16_t endcap;         // +1: positive; -1: negative
+  int16_t sector;         // 1 to 6
+  int16_t ipt;            // 0 to 8: prompt; 9 to 17: displaced
+  int16_t ieta;           // 0 to 6: zone 0-6
+  int16_t iphi;           // 0 to 159: quadstrip number
+  road_hits_t hits;       // hits that belong to this road
+  int16_t mode;           // 4-bit word: see create_road()
+  int16_t quality;        // 0 to 9: see find_emtf_road_quality()
+  int16_t sort_code;      // 10-bit word: see find_emtf_road_sort_code()
+  int32_t phi_median;     // 13-bit integer (0 to 8191): median phi of the hits
+  int32_t theta_median;   // 7-bit integer (0 to 127): median theta of the hits
 };
 
 class Track {
@@ -278,9 +288,9 @@ public:
   }
 
   explicit Track(int16_t vt_endcap, int16_t vt_sector, int16_t vt_ipt, int16_t vt_ieta, int16_t vt_iphi,
-                 const road_hits_t& vt_hits, int16_t vt_mode, int16_t vt_quality, int16_t vt_zone,
+                 const road_hits_t& vt_hits, int16_t vt_mode, int16_t vt_quality, int16_t vt_sort_code,
                  float vt_xml_pt, float vt_pt, int16_t vt_q, float vt_y_pred, float vt_y_discr,
-                 int32_t vt_emtf_phi, int32_t vt_emtf_theta)
+                 float vt_y_displ, float vt_d0_displ, float vt_pt_displ, int32_t vt_emtf_phi, int32_t vt_emtf_theta)
   {
     endcap     = vt_endcap;
     sector     = vt_sector;
@@ -290,33 +300,39 @@ public:
     hits       = vt_hits;
     mode       = vt_mode;
     quality    = vt_quality;
-    zone       = vt_zone;
+    sort_code  = vt_sort_code;
     xml_pt     = vt_xml_pt;
     pt         = vt_pt;
     q          = vt_q;
     y_pred     = vt_y_pred;
     y_discr    = vt_y_discr;
+    y_displ    = vt_y_displ;
+    d0_displ   = vt_d0_displ;
+    pt_displ   = vt_pt_displ;
     emtf_phi   = vt_emtf_phi;
     emtf_theta = vt_emtf_theta;
   }
 
   // Properties
-  int16_t endcap;
-  int16_t sector;
-  int16_t ipt;
-  int16_t ieta;
-  int16_t iphi;
-  road_hits_t hits;
-  int16_t mode;
-  int16_t quality;
-  int16_t zone;
-  float   xml_pt;
-  float   pt;
-  int16_t q;
-  float   y_pred;
-  float   y_discr;
-  int32_t emtf_phi;
-  int32_t emtf_theta;
+  int16_t endcap;         // +1: positive; -1: negative
+  int16_t sector;         // 1 to 6
+  int16_t ipt;            // 0 to 8: prompt; 9 to 17: displaced
+  int16_t ieta;           // 0 to 6: zone 0-6
+  int16_t iphi;           // 0 to 159: quadstrip number
+  road_hits_t hits;       // hits that belong to this road
+  int16_t mode;           // 4-bit word: see create_road()
+  int16_t quality;        // 0 to 9: see find_emtf_road_quality()
+  int16_t sort_code;      // 10-bit word: see find_emtf_road_sort_code()
+  float   xml_pt;         // track pt, before scaling to 90% eff WP.
+  float   pt;             // track pt, after scaling to 90% eff WP.
+  int16_t q;              // track charge.
+  float   y_pred;         // track curvature q/pt (from NN).
+  float   y_discr;        // track PU discr (from NN).
+  float   y_displ;        // track curvature q/pt without vertex constraint (from NN).
+  float   d0_displ;       // track transverse impact parameter (from NN).
+  float   pt_displ;       // track pt without vertex constraint after scaling to ?? eff WP
+  int32_t emtf_phi;       // 13-bit integer (0 to 8191): median phi of the hits. Same as Road::phi_median.
+  int32_t emtf_theta;     // 7-bit integer (0 to 127): median theta of the hits. Same as Road::theta_median.
 };
 
 // A 'Feature' holds 36 values
@@ -380,7 +396,7 @@ std::vector<size_t> my_argsort(const std::vector<T>& v, bool reverse=false) {
   std::vector<size_t> indices(v.size());
   std::iota(indices.begin(), indices.end(), 0);
   auto sort_f = [&v](size_t i, size_t j) { return v[i] < v[j]; };
-  std::sort(indices.begin(), indices.end(), sort_f);
+  std::stable_sort(indices.begin(), indices.end(), sort_f);
   if (reverse) {
     std::reverse(indices.begin(), indices.end());
   }
@@ -485,12 +501,16 @@ public:
     return find_endsec(endcap, sector);
   }
 
+  // A coarse-graining operation
+  // divide by 'quadstrip' unit (4 * 8), and adjust for rounding
   int32_t find_pattern_x(int32_t emtf_phi) const {
-    return (emtf_phi+16)/32;  // divide by 'quadstrip' unit (4 * 8)
+    return (emtf_phi+16)/32;
   }
 
+  // Undo the coarse-graining operation
+  // multiply by 'quadstrip' unit (4 * 8)
   int32_t find_pattern_x_inverse(int32_t x) const {
-    return (x*32);  // multiply by 'quadstrip' unit (4 * 8)
+    return (x*32);
   }
 
   // Calculate transverse impact parameter, d0
@@ -564,23 +584,22 @@ public:
       // rescale the bend to the same scale as ME1/1b
       if ((station == 1) && (ring == 4)) {
         emtf_bend = static_cast<int32_t>(std::round(static_cast<float>(emtf_bend) * 0.026331/0.014264));
-        emtf_bend = std::min(std::max(emtf_bend, -32), 31);
+        emtf_bend = std::clamp(emtf_bend, -32, 31);
       }
       emtf_bend *= endcap;
-      emtf_bend /= 2;  // from 1/32-strip unit to 1/16-strip unit
-
-    //} else if (type == TriggerPrimitive::kGEM) {
-    //  emtf_bend *= endcap;
+      emtf_bend = static_cast<int32_t>(std::round(static_cast<float>(emtf_bend) * 0.5));  // from 1/32-strip unit to 1/16-strip unit
+      emtf_bend = std::clamp(emtf_bend, -16, 15);
 
     } else if (type == TriggerPrimitive::kME0) {
-      emtf_bend = std::min(std::max(emtf_bend, -64), 63);  // currently in 1/2-strip unit
+      emtf_bend = static_cast<int32_t>(std::round(static_cast<float>(emtf_bend) * 0.5));  // from 1/4-strip unit to 1/2-strip unit
+      emtf_bend = std::clamp(emtf_bend, -64, 63);
 
     } else if (type == TriggerPrimitive::kDT) {
       if (quality >= 4) {
-        emtf_bend = std::min(std::max(emtf_bend, -512), 511);
+        emtf_bend = std::clamp(emtf_bend, -512, 511);
       } else {
         //emtf_bend = 0;
-        emtf_bend = std::min(std::max(emtf_bend, -512), 511);
+        emtf_bend = std::clamp(emtf_bend, -512, 511);
       }
 
     } else {  // (type == TriggerPrimitive::kRPC) || (type == TriggerPrimitive::kGEM)
@@ -590,8 +609,30 @@ public:
   }
 
   // Decide EMTF hit bend (old version)
-  // Not implemented
-  int32_t find_emtf_old_bend(const EMTFHit& conv_hit) const { return 0; }
+  int32_t find_emtf_old_bend(const EMTFHit& conv_hit) const {
+    static const int32_t lut[11] = {5, -5, 4, -4, 3, -3, 2, -2, 1, -1, 0};
+
+    int32_t emtf_bend  = conv_hit.Bend();
+    int32_t type       = conv_hit.Subsystem();
+    int32_t endcap     = conv_hit.Endcap();
+    int32_t pattern    = conv_hit.Pattern();  // CLCT pattern
+
+    if (type == TriggerPrimitive::kCSC) {
+      assert(0 <= pattern && pattern <= 10);
+      emtf_bend = lut[pattern];
+      emtf_bend *= endcap;
+
+    } else if (type == TriggerPrimitive::kME0) {
+      // do nothing
+
+    } else if (type == TriggerPrimitive::kDT) {
+      // do nothing
+
+    } else {  // (type == TriggerPrimitive::kRPC) || (type == TriggerPrimitive::kGEM)
+      emtf_bend = 0;
+    }
+    return emtf_bend;
+  }
 
   // Decide EMTF hit phi (integer unit)
   int32_t find_emtf_phi(const EMTFHit& conv_hit) const {
@@ -628,8 +669,137 @@ public:
   }
 
   // Decide EMTF hit phi (integer unit) (old version)
-  // Not implemented
-  int32_t find_emtf_old_phi(const EMTFHit& conv_hit) const { return 0; }
+  int32_t find_emtf_old_phi(const EMTFHit& conv_hit) const {
+    static const int32_t ph_pattern_corr_lut[11] = {0, 0, 5, 5, 5, 5, 2, 2, 2, 2, 0};
+    static const int32_t ph_pattern_corr_sign_lut[11] = {0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0};
+    static const int32_t ph_init_lut[2*6*61] = {
+        1324,1926,2527,1332,1932,2532,1415,2015,2615,1332,1932,2532,726,732,815,732,3128,3725,4325,3132,3732,4332,3214,3815,4415,3131,3732,4331,1316,2516,
+        3716,1332,1932,2532,3132,3732,4332,116,732,2580,3781,4980,1964,2564,3164,3764,4364,4964,1380,1364,2580,3780,4980,1964,2564,3164,3764,4364,4964,1380,
+        1364,1326,1923,2527,1332,1932,2532,1415,2015,2614,1331,1931,2531,725,732,815,731,3123,3724,4326,3132,3732,4332,3214,3814,4415,3131,3731,4331,1316,
+        2516,3715,1332,1932,2532,3132,3731,4331,116,732,2580,3780,4980,1964,2564,3164,3763,4363,4964,1380,1364,2580,3780,4979,1964,2564,3164,3763,4363,4963,
+        1380,1363,1323,1926,2525,1331,1932,2532,1415,2015,2615,1331,1931,2531,726,732,816,732,3124,3727,4325,3132,3732,4332,3215,3815,4415,3131,3731,4332,
+        1316,2516,3716,1332,1932,2532,3131,3731,4332,116,732,2580,3780,4980,1964,2564,3164,3764,4364,4964,1381,1364,2580,3780,4980,1964,2564,3164,3764,4364,
+        4964,1380,1364,1324,1929,2531,1332,1932,2532,1416,2015,2615,1331,1932,2531,725,732,815,732,3123,3728,4327,3132,3732,4332,3215,3815,4416,3132,3731,
+        4332,1316,2516,3716,1332,1932,2532,3132,3733,4332,116,732,2580,3781,4980,1964,2564,3165,3765,4365,4964,1380,1364,2580,3781,4981,1964,2564,3164,3765,
+        4365,4965,1380,1364,1325,1925,2524,1332,1932,2532,1415,2015,2615,1331,1931,2531,727,732,815,731,3124,3726,4325,3132,3732,4332,3215,3815,4415,3132,
+        3731,4331,1316,2516,3716,1332,1932,2532,3132,3732,4332,116,732,2580,3780,4980,1964,2564,3164,3764,4364,4964,1380,1364,2580,3780,4980,1964,2564,3164,
+        3764,4364,4964,1380,1364,1321,1927,2524,1332,1932,2532,1415,2015,2615,1331,1931,2532,725,732,815,731,3128,3727,4326,3133,3732,4332,3215,3815,4415,
+        3131,3731,4332,1316,2516,3716,1332,1932,2532,3132,3732,4332,116,732,2580,3780,4980,1964,2564,3164,3764,4364,4964,1380,1364,2580,3780,4980,1964,2564,
+        3164,3764,4364,4964,1380,1364,1979,2578,3178,1972,2572,3172,1890,2489,3090,1973,2573,3173,1380,1372,1289,1375,3779,4380,4978,3772,4372,4972,3689,4289,
+        4889,3772,4373,4972,2588,3788,4988,1972,2572,3172,3772,4372,4972,1388,1372,1324,2524,3724,1340,1940,2540,3140,3740,4340,124,740,1324,2524,3724,1340,
+        1940,2540,3140,3740,4340,124,740,1979,2578,3179,1972,2572,3172,1889,2489,3089,1973,2573,3173,1378,1372,1289,1372,3778,4380,4982,3772,4372,4972,3689,
+        4289,4890,3773,4373,4973,2588,3788,4988,1972,2572,3172,3772,4372,4972,1388,1372,1324,2524,3724,1340,1940,2540,3140,3740,4340,124,740,1324,2524,3724,
+        1340,1940,2540,3140,3740,4340,124,740,1977,2580,3179,1972,2572,3172,1889,2489,3089,1975,2572,3173,1382,1372,1289,1372,3779,4379,4979,3772,4372,4972,
+        3688,4289,4889,3773,4373,4973,2588,3788,4988,1972,2572,3172,3772,4372,4972,1388,1372,1324,2524,3724,1340,1940,2540,3140,3740,4340,124,740,1324,2524,
+        3724,1340,1940,2540,3140,3740,4340,124,740,1979,2577,3180,1972,2572,3172,1889,2489,3089,1973,2573,3173,1379,1372,1289,1373,3780,4378,4979,3772,4372,
+        4972,3689,4289,4889,3773,4373,4973,2588,3788,4988,1972,2572,3172,3772,4372,4972,1388,1372,1324,2524,3724,1340,1940,2540,3140,3740,4340,124,740,1324,
+        2524,3724,1340,1940,2541,3141,3741,4341,124,740,1978,2580,3179,1972,2572,3172,1889,2489,3089,1973,2573,3173,1380,1372,1290,1373,3780,4378,4981,3772,
+        4372,4972,3689,4290,4889,3775,4372,4977,2588,3787,4987,1972,2572,3172,3772,4372,4972,1388,1372,1324,2523,3723,1340,1940,2540,3140,3740,4340,124,740,
+        1324,2523,3724,1341,1941,2541,3141,3741,4341,124,741,1979,2581,3178,1973,2573,3173,1890,2490,3090,1973,2575,3173,1382,1373,1290,1377,3779,4380,4981,
+        3773,4373,4973,3690,4290,4890,3774,4374,4976,2589,3789,4989,1973,2573,3173,3773,4373,4973,1388,1373,1325,2525,3725,1341,1941,2541,3141,3741,4341,124,
+        741,1325,2525,3725,1341,1941,2541,3141,3741,4341,124,742
+    };
+
+    int32_t emtf_phi   = conv_hit.Phi_fp();
+    int32_t type       = conv_hit.Subsystem();
+
+    if (type == TriggerPrimitive::kCSC) {
+      const bool is_neighbor = conv_hit.Neighbor();
+      const int fw_endcap = (conv_hit.Endcap() == 1) ? 0 : 1;
+      const int fw_sector = conv_hit.PC_sector()-1;
+      const int fw_station = (conv_hit.Station() == 1) ? (is_neighbor ? 0 : (conv_hit.Subsector()-1)) : conv_hit.Station();
+      const int fw_cscid   = (conv_hit.CSC_nID()-1);
+      const int fw_strip = conv_hit.Strip();
+      const int pc_station = conv_hit.PC_station();
+      const int pc_chamber = conv_hit.PC_chamber();
+      const bool is_me11a = (conv_hit.Station() == 1 && conv_hit.Ring() == 4);
+      const bool is_me11b = (conv_hit.Station() == 1 && conv_hit.Ring() == 1);
+      const bool is_me13  = (conv_hit.Station() == 1 && conv_hit.Ring() == 3);
+
+      // Is this chamber mounted in reverse direction?
+      // (i.e., phi vs. strip number is reversed)
+      bool ph_reverse = false;
+      if ((fw_endcap == 0 && fw_station >= 3) || (fw_endcap == 1 && fw_station < 3))  // ME+3, ME+4, ME-1, ME-2
+        ph_reverse = true;
+
+      // Is this 10-deg or 20-deg chamber?
+      bool is_10degree = false;
+      if (
+          (fw_station <= 1) || // ME1
+          (fw_station >= 2 && ((fw_cscid >= 3 && fw_cscid <= 8) || fw_cscid == 10))  // ME2,3,4/2
+      ) {
+        is_10degree = true;
+      }
+
+      // LUT index
+      // There are 54 CSC chambers including the neighbors in a sector, but 61 LUT indices
+      // This comes from dividing the 6 chambers + 1 neighbor in ME1/1 into ME1/1a and ME1/1b
+      int pc_lut_id = pc_chamber;
+      if (pc_station == 0) {         // ME1 sub 1: 0 - 11
+        pc_lut_id = is_me11a ? pc_lut_id + 9 : pc_lut_id;
+      } else if (pc_station == 1) {  // ME1 sub 2: 16 - 27
+        pc_lut_id += 16;
+        pc_lut_id = is_me11a ? pc_lut_id + 9 : pc_lut_id;
+      } else if (pc_station == 2) {  // ME2: 28 - 36
+        pc_lut_id += 28;
+      } else if (pc_station == 3) {  // ME3: 39 - 47
+        pc_lut_id += 39;
+      } else if (pc_station == 4) {  // ME4 : 50 - 58
+        pc_lut_id += 50;
+      } else if (pc_station == 5 && pc_chamber < 3) {  // neighbor ME1: 12 - 15
+        pc_lut_id = is_me11a ? pc_lut_id + 15 : pc_lut_id + 12;
+      } else if (pc_station == 5 && pc_chamber < 5) {  // neighbor ME2: 37 - 38
+        pc_lut_id += 28 + 9 - 3;
+      } else if (pc_station == 5 && pc_chamber < 7) {  // neighbor ME3: 48 - 49
+        pc_lut_id += 39 + 9 - 5;
+      } else if (pc_station == 5 && pc_chamber < 9) {  // neighbor ME4: 59 - 60
+        pc_lut_id += 50 + 9 - 7;
+      }
+      assert(pc_lut_id < 61);
+
+      // Convert half-strip into 1/8-strip
+      int eighth_strip = 0;
+
+      // Apply phi correction from CLCT pattern number (from src/SectorProcessorLUT.cc)
+      int clct_pat_corr = ph_pattern_corr_lut[conv_hit.Pattern()];
+      int clct_pat_corr_sign = (ph_pattern_corr_sign_lut[conv_hit.Pattern()] == 0) ? 1 : -1;
+      if (fw_strip == 0 && clct_pat_corr_sign == -1)
+        clct_pat_corr = 0;
+
+      if (is_10degree) {
+        eighth_strip = fw_strip << 2;  // full precision, uses only 2 bits of pattern correction
+        eighth_strip += clct_pat_corr_sign * (clct_pat_corr >> 1);
+      } else {
+        eighth_strip = fw_strip << 3;  // multiply by 2, uses all 3 bits of pattern correction
+        eighth_strip += clct_pat_corr_sign * (clct_pat_corr >> 0);
+      }
+      assert(eighth_strip >= 0);
+
+      // Multiplicative factor for eighth_strip
+      int factor = 1024;
+      if (is_me11a)
+        factor = 1707;  // ME1/1a
+      else if (is_me11b)
+        factor = 1301;  // ME1/1b
+      else if (is_me13)
+        factor = 947;   // ME1/3
+
+      int ph_tmp = (eighth_strip * factor) >> 10;
+      int ph_tmp_sign = (ph_reverse == 0) ? 1 : -1;
+
+      int endsec_pc_lut_id = (fw_endcap * 6 + fw_sector) * 61 + pc_lut_id;
+      int fph = ph_init_lut[endsec_pc_lut_id];
+      fph = fph + ph_tmp_sign * ph_tmp;
+      assert(0 <= fph && fph < 5000);
+      //
+      emtf_phi = fph;
+
+    } else {
+      // do nothing
+    }
+
+    return emtf_phi;
+  }
 
   // Decide EMTF hit theta (integer unit)
   int32_t find_emtf_theta(const EMTFHit& conv_hit) const {
@@ -699,21 +869,22 @@ public:
     // Next 9 patterns for displaced muons: -1/14 <= q/pT <= +1/14, -120 <= d0 <= 120
     // Total is 18 patterns.
     // ipt   0  1  2  3  4  5  6  7  8
-    // strg  1  3  5  7  9  7  5  3  1
+    // strg  5  6  7  8  9  8  7  6  5
     // ipt   9 10 11 12 13 14 15 16 17
-    // strg  0  2  4  6  8  6  4  2  0
-    static const int32_t lut[PATTERN_BANK_NPT] = {1,3,5,7,9,7,5,3,1,0,2,4,6,8,6,4,2,0};
+    // strg  0  1  2  3  4  3  2  1  0
+    static const int32_t lut[PATTERN_BANK_NPT] = {5,6,7,8,9,8,7,6,5,0,1,2,3,4,3,2,1,0};
+    assert((0 <= ipt) && (ipt < PATTERN_BANK_NPT));
     return lut[ipt];
   }
 
   // Decide EMTF road sort code (by hit composition)
   int32_t find_emtf_road_sort_code(int32_t road_quality, const std::vector<int32_t>& road_hits_layers) const {
-    // 10   9      8      7    6      5    4    3..0
-    //      ME1/1  ME1/2  ME2         ME3  ME4  qual
-    //                         RE1&2  RE3  RE4
-    // ME0         GE1/1       GE2/1
-    // MB1  MB2                MB3&4
-    static const int32_t lut[NLAYERS] = {9,8,7,5,4,6,6,5,4,8,6,10,10,9,6,6};
+    // 12   11     10     9      8      7      6      5      4      3..0
+    //      ME1/1  ME1/2  ME2    ME3    ME4                         qual
+    //                                                RE1&2  RE3&4
+    // ME0                                     GE1/1  GE2/1
+    // MB1  MB2                                MB3&4
+    static const int32_t lut[NLAYERS] = {11,10,9,8,7,5,5,4,4,6,5,12,12,11,6,6};
 
     int32_t sort_code = 0;
     for (const auto& hit_lay : road_hits_layers) {
@@ -725,194 +896,24 @@ public:
     return sort_code;
   }
 
-  bool is_emtf_singlemu(int mode) const {
-    static const std::set<int> s {11,13,14,15};
-    return (s.find(mode) != s.end());  // s.contains(mode);
-  }
-
-  bool is_emtf_doublemu(int mode) const {
-    //static const std::set<int> s {7,10,12,11,13,14,15};
-    static const std::set<int> s {9,10,12,11,13,14,15};  // replace 2-3-4 with 1-4
-    return (s.find(mode) != s.end());  // s.contains(mode);
-  }
-
-  bool is_emtf_muopen(int mode) const {
-    static const std::set<int> s {3,5,6,9,7,10,12,11,13,14,15};
-    return (s.find(mode) != s.end());  // s.contains(mode);
-  }
-
-  bool is_emtf_singlehit(int mode) const {
-    return bool(mode & (1 << 3));
-  }
-
-  bool is_emtf_singlehit_me2(int mode) const {
-    return bool(mode & (1 << 2));
-  }
-
-  // For now, only consider BX=0
-  bool is_emtf_legit_hit_check_bx(const EMTFHit& conv_hit) const {
-    int32_t type       = conv_hit.Subsystem();
-    int32_t bx         = conv_hit.BX();
-
-    if (type == TriggerPrimitive::kCSC) {
-      return (bx == -1) || (bx == 0);
-    } else if (type == TriggerPrimitive::kDT) {
-      return (bx == -1) || (bx == 0);
+  // Decide EMTF road mode
+  int32_t find_emtf_road_mode(const std::vector<Hit>& road_hits) const {
+    // 'road_mode' is a 4-bit word where each bit indicates whether a hit was
+    // found in one of the 4 stations
+    // |bit| 3 | 2 | 1 | 0 |
+    // |---|---|---|---|---|
+    // |st | 1 | 2 | 3 | 4 |
+    int32_t road_mode = 0;
+    for (const auto& hit : road_hits) {
+      int32_t station = hit.station;
+      road_mode |= (1 << (4 - station));
     }
-    return (bx == 0);
+    return road_mode;
   }
 
-  bool is_emtf_legit_hit_check_phi(const EMTFHit& conv_hit) const {
-    int32_t type       = conv_hit.Subsystem();
-    int32_t emtf_phi   = conv_hit.Phi_fp();
-
-    if (type == TriggerPrimitive::kME0) {
-      return (emtf_phi > 0);
-    } else if (type == TriggerPrimitive::kDT) {
-      return (emtf_phi > 0);
-    }
-    return true;
-  }
-
-  bool is_emtf_legit_hit(const EMTFHit& conv_hit) const {
-    return is_emtf_legit_hit_check_bx(conv_hit) && is_emtf_legit_hit_check_phi(conv_hit);
-  }
-
-  int find_pt_bin(float x) const {
-    static const std::vector<float> v = {-0.49376795, -0.38895044, -0.288812, -0.19121648, -0.0810074, 0.0810074, 0.19121648, 0.288812, 0.38895044, 0.49376795};  // bin edges
-
-    x = (x < v.front()) ? (v.front()) : ((v.back() - 1e-5) < x ? (v.back() - 1e-5) : x);  // clip
-    unsigned ind = std::upper_bound(v.begin(), v.end(), x) - v.begin() - 1;
-    assert(ind < v.size());
-    return ind;
-  }
-
-  int find_eta_bin(float x) const {
-    static const std::vector<float> v = {0.8, 1.24, 1.56, 1.7, 1.8, 1.98, 2.16, 2.4};  // bin edges
-
-    x = std::abs(x);  // abs(eta)
-    x = (x < v.front()) ? (v.front()) : ((v.back() - 1e-5) < x ? (v.back() - 1e-5) : x);  // clip
-    unsigned ind = std::upper_bound(v.begin(), v.end(), x) - v.begin() - 1;
-    assert(ind < v.size());
-    ind = (v.size()-1) - ind;  // zone 0 starts at highest eta
-    return ind;
-  }
-
-private:
-  // 3-D array of size [# types][# stations][# rings]
-  using lut_5_5_5_t = std::array<std::array<std::array<int32_t, 5>, 5>, 5>;
-  lut_5_5_5_t find_emtf_layer_lut {};
-
-  // 5-D array of size [# types][# stations][# rings][# zones][low, high]
-  using lut_5_5_5_7_2_t = std::array<std::array<std::array<std::array<std::array<int32_t, 2>, 7>, 5>, 5>, 5>;
-  lut_5_5_5_7_2_t find_emtf_zones_lut {};
-};
-
-constexpr Utility util;
-
-#include "patternbank.icc"
-
-class PatternBank {
-public:
-  // Constructor
-  constexpr PatternBank() {
-    // Initialize 4-D array
-    for (size_t i=0; i<x_array.size(); i++) {
-      for (size_t j=0; j<x_array[i].size(); j++) {
-        for (size_t k=0; k<x_array[i][j].size(); k++) {
-          for (size_t l=0; l<x_array[i][j][k].size(); l++) {
-            x_array[i][j][k][l] = std::move(_patternbank[i][j][k][l]);
-          }
-        }
-      }
-    }
-  }  // end constructor
-
-  // 4-D array of size [NLAYERS][NETA][NVARS][NPT]
-  // Note: rearranged for cache-friendliness. In the original python script,
-  // it's arranged as [NPT][NETA][NLAYERS][NVARS]
-  using patternbank_t = std::array<std::array<std::array<std::array<int32_t, PATTERN_BANK_NPT>,
-      PATTERN_BANK_NVARS>, PATTERN_BANK_NETA>, PATTERN_BANK_NLAYERS>;
-
-  patternbank_t x_array {};
-};
-
-constexpr PatternBank bank;
-
-
-// _____________________________________________________________________________
-// PatternRecognition class matches hits to pre-defined patterns.
-// Before the pattern matching, it also converts the EMTFHitCollection into a
-// vector<Hit>, where Hit is a simple data struct. A set of 18 patterns is
-// used for each zone and for each 'quadstrip'. The pattern matching is done by
-// comparing the phi value of each hit to the window encoded for the station of
-// the hit in a pattern. When a pattern fires, a road is produced. The output
-// of this class is a vector<Road>, which contains all the roads.
-// In this C++ version, the pattern matching is done with some trick to speed
-// up software processing. It is not the logic meant to be implemented in
-// firmware, but it should give the same results.
-
-class PatternRecognition {
-public:
-  void run(int32_t endcap, int32_t sector, const EMTFHitCollection& conv_hits,
-           std::vector<Hit>& sector_hits, std::vector<Road>& sector_roads) const {
-
-    // Convert all the hits again and apply the filter to get the legit hits
-    int32_t sector_mode = 0;
-
-    for (size_t ihit = 0; ihit < conv_hits.size(); ++ihit) {
-      const EMTFHit& conv_hit = conv_hits.at(ihit);
-
-      int32_t dummy_sim_tp = -1;
-
-      if (util.is_emtf_legit_hit(conv_hit)) {
-        //Hit(int16_t vh_type, int16_t vh_station, int16_t vh_ring,
-        //    int16_t vh_endsec, int16_t vh_fr, int16_t vh_bx,
-        //    int32_t vh_emtf_layer, int32_t vh_emtf_phi, int32_t vh_emtf_theta,
-        //    int32_t vh_emtf_bend, int32_t vh_emtf_qual, int32_t vh_emtf_time,
-        //    int32_t vh_old_emtf_phi, int32_t vh_old_emtf_bend,
-        //    int32_t vh_sim_tp, int32_t vh_ref)
-        sector_hits.emplace_back(conv_hit.Subsystem(), conv_hit.Station(), conv_hit.Ring(),
-            util.find_endsec(conv_hit), util.find_fr(conv_hit), conv_hit.BX(),
-            util.find_emtf_layer(conv_hit), util.find_emtf_phi(conv_hit), util.find_emtf_theta(conv_hit),
-            util.find_emtf_bend(conv_hit), util.find_emtf_qual(conv_hit), util.find_emtf_time(conv_hit),
-            util.find_emtf_old_phi(conv_hit), util.find_emtf_old_bend(conv_hit),
-            dummy_sim_tp, ihit);
-
-        // Set sector_mode
-        const Hit& hit = sector_hits.back();
-        assert(0 <= hit.endsec && hit.endsec <= 11);
-        assert(hit.emtf_layer != -99);
-
-        if (hit.type == TriggerPrimitive::kCSC) {
-          sector_mode |= (1 << (4 - hit.station));
-        } else if (hit.type == TriggerPrimitive::kME0) {
-          sector_mode |= (1 << (4 - 1));
-        } else if (hit.type == TriggerPrimitive::kDT) {
-          sector_mode |= (1 << (4 - 1));
-        }
-      }
-    }  // end loop over conv_hits
-
-    // Provide early exit if no hit in stations 1&2 (check CSC, ME0, DT)
-    if (!util.is_emtf_singlehit(sector_mode) && !util.is_emtf_singlehit_me2(sector_mode)) {
-      return;
-    }
-
-    // Apply patterns to the sector hits
-    apply_patterns(endcap, sector, sector_hits, sector_roads);
-
-    constexpr auto sort_roads_f = [](const Road& lhs, const Road& rhs) {
-      return lhs.id() < rhs.id();
-    };
-    std::sort(sector_roads.begin(), sector_roads.end(), sort_roads_f);
-    return;
-  }
-
-private:
-  void create_road(const Road::road_id_t road_id, const Road::road_hits_t road_hits, std::vector<Road>& sector_roads) const {
-
-    // Find road modes
+  // Decide EMTF road accept
+  bool find_emtf_road_accept(int32_t road_zone, const std::vector<Hit>& road_hits) const {
+    // The other road modes are used to add specific rules for different zones.
     int road_mode          = 0;
     int road_mode_csc      = 0;
     int road_mode_me0      = 0;  // zones 0,1
@@ -995,25 +996,235 @@ private:
       //}
     }  // end loop over road_hits
 
-    // Create road
-    int32_t ipt  = road_id[2];  // road_id = (endcap, sector, ipt, ieta, iphi)
-    int32_t ieta = road_id[3];
-
     // Apply SingleMu requirement
     // + (zones 0,1) any road with ME0 and ME1
     // + (zone 4) any road with ME1/1, ME1/2 + one more station
     // + (zone 5) any road with 2 stations
     // + (zone 6) any road with MB1+MB2, MB1+MB3, MB1+ME1/3, MB1+ME2/2, MB2+MB3, MB2+ME1/3, MB2+ME2/2, ME1/3+ME2/2
-    if ((util.is_emtf_singlemu(road_mode) && util.is_emtf_muopen(road_mode_csc)) ||
-        (((ieta == 0) || (ieta == 1)) && (road_mode_me0 == 3)) ||
-        ((ieta == 4) && util.is_emtf_singlemu(road_mode_me12) && util.is_emtf_muopen(road_mode_csc_me12)) ||
-        ((ieta == 5) && util.is_emtf_doublemu(road_mode) && util.is_emtf_muopen(road_mode_csc)) ||
-        ((ieta == 6) && ((road_mode_mb1 == 3) || (road_mode_mb2 == 3) || (road_mode_me13 == 3))) )
-    {
+    bool accept = ((is_emtf_singlemu(road_mode) && is_emtf_muopen(road_mode_csc)) ||
+        (((road_zone == 0) || (road_zone == 1)) && (road_mode_me0 == 3)) ||
+        ((road_zone == 4) && is_emtf_singlemu(road_mode_me12) && is_emtf_muopen(road_mode_csc_me12)) ||
+        ((road_zone == 5) && is_emtf_doublemu(road_mode) && is_emtf_muopen(road_mode_csc)) ||
+        ((road_zone == 6) && ((road_mode_mb1 == 3) || (road_mode_mb2 == 3) || (road_mode_me13 == 3))) );
+    return accept;
+  }
+
+  bool is_emtf_singlemu(int mode) const {
+    static const std::set<int> s {11,13,14,15};
+    return (s.find(mode) != s.end());  // s.contains(mode);
+  }
+
+  bool is_emtf_doublemu(int mode) const {
+    //static const std::set<int> s {7,10,12,11,13,14,15};
+    static const std::set<int> s {9,10,12,11,13,14,15};  // replace 2-3-4 with 1-4
+    return (s.find(mode) != s.end());  // s.contains(mode);
+  }
+
+  bool is_emtf_muopen(int mode) const {
+    //static const std::set<int> s {3,5,6,9,7,10,12,11,13,14,15};
+    static const std::set<int> s {5,6,9,7,10,12,11,13,14,15};  // remove 3-4
+    return (s.find(mode) != s.end());  // s.contains(mode);
+  }
+
+  bool is_emtf_singlehit(int mode) const {
+    return bool(mode & (1 << 3));
+  }
+
+  bool is_emtf_singlehit_me2(int mode) const {
+    return bool(mode & (1 << 2));
+  }
+
+  // For now, only consider BX=0
+  bool is_emtf_legit_hit_check_bx(const EMTFHit& conv_hit) const {
+    int32_t type       = conv_hit.Subsystem();
+    int32_t bx         = conv_hit.BX();
+
+    if (type == TriggerPrimitive::kCSC) {
+      return (bx == -1) || (bx == 0);
+    } else if (type == TriggerPrimitive::kDT) {
+      return (bx == -1) || (bx == 0);
+    }
+    return (bx == 0);
+  }
+
+  bool is_emtf_legit_hit_check_phi(const EMTFHit& conv_hit) const {
+    int32_t type       = conv_hit.Subsystem();
+    int32_t emtf_phi   = conv_hit.Phi_fp();
+
+    if (type == TriggerPrimitive::kME0) {
+      return (emtf_phi > 0);
+    } else if (type == TriggerPrimitive::kDT) {
+      return (emtf_phi > 0);
+    }
+    return true;
+  }
+
+  bool is_emtf_legit_hit(const EMTFHit& conv_hit) const {
+    return is_emtf_legit_hit_check_bx(conv_hit) && is_emtf_legit_hit_check_phi(conv_hit);
+  }
+
+  int find_pt_bin(float x) const {
+    static const std::vector<float> v = {-0.49376795, -0.38895044, -0.288812, -0.19121648, -0.0810074, 0.0810074, 0.19121648, 0.288812, 0.38895044, 0.49376795};  // bin edges
+
+    x = std::clamp(x, v.front(), static_cast<float>(v.back() - 1e-5));
+    unsigned ind = std::upper_bound(v.begin(), v.end(), x) - v.begin() - 1;
+    assert(ind < v.size());
+    return ind;
+  }
+
+  int find_eta_bin(float x) const {
+    static const std::vector<float> v = {0.8, 1.24, 1.56, 1.7, 1.8, 1.98, 2.16, 2.4};  // bin edges
+
+    x = std::abs(x);  // abs(eta)
+    x = std::clamp(x, v.front(), static_cast<float>(v.back() - 1e-5));
+    unsigned ind = std::upper_bound(v.begin(), v.end(), x) - v.begin() - 1;
+    assert(ind < v.size());
+    ind = (v.size()-1) - ind;  // zone 0 starts at highest eta
+    return ind;
+  }
+
+private:
+  // 3-D array of size [# types][# stations][# rings]
+  using lut_5_5_5_t = std::array<std::array<std::array<int32_t, 5>, 5>, 5>;
+  lut_5_5_5_t find_emtf_layer_lut {};
+
+  // 5-D array of size [# types][# stations][# rings][# zones][low, high]
+  using lut_5_5_5_7_2_t = std::array<std::array<std::array<std::array<std::array<int32_t, 2>, 7>, 5>, 5>, 5>;
+  lut_5_5_5_7_2_t find_emtf_zones_lut {};
+};
+
+constexpr Utility util;
+
+#include "patternbank.icc"
+
+class PatternBank {
+public:
+  // Constructor
+  constexpr PatternBank() {
+    // Initialize 4-D array
+    for (size_t i=0; i<x_array.size(); i++) {
+      for (size_t j=0; j<x_array[i].size(); j++) {
+        for (size_t k=0; k<x_array[i][j].size(); k++) {
+          for (size_t l=0; l<x_array[i][j][k].size(); l++) {
+            x_array[i][j][k][l] = std::move(_patternbank[i][j][k][l]);
+          }
+        }
+      }
+    }
+  }  // end constructor
+
+  // 4-D array of size [NLAYERS][NETA][NVARS][NPT]
+  // Note: rearranged for cache-friendliness. In the original python script,
+  // it's arranged as [NPT][NETA][NLAYERS][NVARS]
+  using patternbank_t = std::array<std::array<std::array<std::array<int32_t, PATTERN_BANK_NPT>,
+      PATTERN_BANK_NVARS>, PATTERN_BANK_NETA>, PATTERN_BANK_NLAYERS>;
+
+  patternbank_t x_array {};
+};
+
+constexpr PatternBank bank;
+
+
+// _____________________________________________________________________________
+// PatternRecognition class matches hits to pre-defined patterns.
+// Before the pattern matching, it also converts the EMTFHitCollection into a
+// vector<Hit>, where Hit is a simple data struct. A set of 18 patterns is
+// used for each zone and for each 'quadstrip'. The pattern matching is done by
+// comparing the phi value of each hit to the window encoded for the station of
+// the hit in a pattern. When a pattern fires, a road is produced. A road
+// contains information about the pattern that fires and the hits that
+// belong to the road. The output of this class is a vector<Road>, which
+// contains all the roads.
+// In this C++ version, the pattern matching is done with some trick to speed
+// up software processing. It is not the logic meant to be implemented in
+// firmware, but it should give the same results.
+
+class PatternRecognition {
+public:
+  void run(int32_t endcap, int32_t sector, const EMTFHitCollection& conv_hits,
+           std::vector<Hit>& sector_hits, std::vector<Road>& sector_roads) const {
+
+    // Optimize for CPU processing?
+    bool optimize_for_cpu = true;
+
+    // Use endcap = +1 or -1
+    if (endcap == 2)
+      endcap = -1;
+
+    // Convert all the hits again and apply the filter to get the legit hits
+    int32_t sector_mode = 0;
+
+    for (size_t ihit = 0; ihit < conv_hits.size(); ++ihit) {
+      const EMTFHit& conv_hit = conv_hits.at(ihit);
+
+      int32_t dummy_sim_tp = -1;
+
+      if (util.is_emtf_legit_hit(conv_hit)) {
+        //Hit(int16_t vh_type, int16_t vh_station, int16_t vh_ring,
+        //    int16_t vh_endsec, int16_t vh_fr, int16_t vh_bx,
+        //    int32_t vh_emtf_layer, int32_t vh_emtf_phi, int32_t vh_emtf_theta,
+        //    int32_t vh_emtf_bend, int32_t vh_emtf_qual, int32_t vh_emtf_time,
+        //    int32_t vh_old_emtf_phi, int32_t vh_old_emtf_bend,
+        //    int32_t vh_sim_tp, int32_t vh_ref)
+        sector_hits.emplace_back(conv_hit.Subsystem(), conv_hit.Station(), conv_hit.Ring(),
+            util.find_endsec(conv_hit), util.find_fr(conv_hit), conv_hit.BX(),
+            util.find_emtf_layer(conv_hit), util.find_emtf_phi(conv_hit), util.find_emtf_theta(conv_hit),
+            util.find_emtf_bend(conv_hit), util.find_emtf_qual(conv_hit), util.find_emtf_time(conv_hit),
+            util.find_emtf_old_phi(conv_hit), util.find_emtf_old_bend(conv_hit),
+            dummy_sim_tp, ihit);
+
+        // Set sector_mode
+        const Hit& hit = sector_hits.back();
+        assert(0 <= hit.endsec && hit.endsec <= 11);
+        assert(hit.emtf_layer != -99);
+
+        if (optimize_for_cpu) {
+          if (hit.type == TriggerPrimitive::kCSC) {
+            sector_mode |= (1 << (4 - hit.station));
+          } else if (hit.type == TriggerPrimitive::kME0) {
+            sector_mode |= (1 << (4 - 1));
+          } else if (hit.type == TriggerPrimitive::kDT) {
+            sector_mode |= (1 << (4 - 1));
+          }
+        }
+      }
+    }  // end loop over conv_hits
+
+    // Provide early exit if no hit in stations 1&2 (check CSC, ME0, DT)
+    if (optimize_for_cpu) {
+      if (!util.is_emtf_singlehit(sector_mode) && !util.is_emtf_singlehit_me2(sector_mode)) {
+        return;
+      }
+    }
+
+    // Apply patterns to the sector hits
+    if (optimize_for_cpu) {
+      apply_patterns(endcap, sector, sector_hits, sector_roads);
+    } else {
+      apply_patterns_unoptimized(endcap, sector, sector_hits, sector_roads);
+    }
+
+    // Sort the roads according to the road_id
+    constexpr auto sort_roads_f = [](const Road& lhs, const Road& rhs) {
+      return lhs.id() < rhs.id();
+    };
+    std::sort(sector_roads.begin(), sector_roads.end(), sort_roads_f);
+    return;
+  }
+
+private:
+  void create_road(const Road::road_id_t road_id, const Road::road_hits_t road_hits, std::vector<Road>& sector_roads) const {
+    int32_t ipt  = road_id[2];  // road_id = (endcap, sector, ipt, ieta, iphi)
+    int32_t ieta = road_id[3];
+
+    // Check whether the road is OK
+    bool accept = util.find_emtf_road_accept(ieta, road_hits);
+    if (accept) {
       std::vector<int32_t> road_hits_layers;
       std::transform(road_hits.begin(), road_hits.end(), std::back_inserter(road_hits_layers),
           [](const auto& hit) -> int32_t { return hit.emtf_layer; });
 
+      int32_t road_mode = util.find_emtf_road_mode(road_hits);
       int32_t road_quality = util.find_emtf_road_quality(ipt);
       int32_t road_sort_code = util.find_emtf_road_sort_code(road_quality, road_hits_layers);
       int32_t road_phi_median = 0;   // to be determined later
@@ -1087,7 +1298,8 @@ private:
           iphi         = (hit_x - iphi);
           int32_t ieta = hit_zone;
 
-          // Full range is 0 <= iphi <= 154. but a reduced range is sufficient (27% saving on patterns)
+          // 'x' is the unit used in the patterns
+          // Full range is 0 <= iphi <= 160. but a reduced range is sufficient (27% saving on patterns)
           if ((PATTERN_X_SEARCH_MIN <= iphi) && (iphi <= PATTERN_X_SEARCH_MAX)) {
             Road::road_id_t road_id {{endcap, sector, ipt, ieta, iphi}};
             amap[road_id].push_back(hit);
@@ -1104,6 +1316,60 @@ private:
     }
     return;
   }
+
+  void apply_patterns_unoptimized(int32_t endcap, int32_t sector,
+                                  const std::vector<Hit>& sector_hits, std::vector<Road>& sector_roads) const {
+
+    // Loop over all zones
+    for (int32_t ieta = 0; ieta != PATTERN_BANK_NETA; ++ieta) {
+      if (ieta == 6) {  // For now, ignore zone 6
+        continue;
+      }
+
+      // Loop over all hits, find the ones that belong to this station and this zone
+      std::vector<Hit> zone_hits;
+      for (const auto& hit : sector_hits) {
+        //int32_t hit_lay = hit.emtf_layer;
+        //int32_t hit_x   = util.find_pattern_x(hit.emtf_phi);
+        const auto& hit_zones = util.find_emtf_zones(hit);
+
+        for (const auto& hit_zone : hit_zones) {
+          if (hit_zone == ieta) {
+            zone_hits.push_back(hit);
+          }
+        }  // end loop over hit_zones
+      }  // end loop over sector_hits
+
+      // Now loop over all the different shapes (straightness)
+      for (int32_t ipt = 0; ipt != PATTERN_BANK_NPT; ++ipt) {
+
+        // 'x' is the unit used in the patterns
+        // Full range is 0 <= iphi <= 160. but a reduced range is sufficient (27% saving on patterns)
+        for (int32_t iphi = PATTERN_X_SEARCH_MIN; iphi != (PATTERN_X_SEARCH_MAX+1); ++iphi) {
+          Road::road_id_t road_id {{endcap, sector, ipt, ieta, iphi}};
+          Road::road_hits_t road_hits;
+
+          for (const auto& hit : zone_hits) {
+            int32_t hit_lay = hit.emtf_layer;
+            int32_t hit_x   = util.find_pattern_x(hit.emtf_phi);
+
+            int32_t iphi_low  = bank.x_array[hit_lay][ieta][0][ipt];
+            int32_t iphi_high = bank.x_array[hit_lay][ieta][2][ipt];
+
+            if ((iphi + iphi_low <= hit_x) && (hit_x <= iphi + iphi_high)) {
+              road_hits.push_back(hit);
+            }
+          }
+
+          if (!road_hits.empty()) {
+            create_road(road_id, road_hits, sector_roads);  // only valid roads are being appended to sector_roads
+          }
+        }  // end loop over x
+      }  // end loop over all the different shapes (straightness)
+    }  // end loop over all zones
+
+    return;
+  }
 };
 
 // RoadCleaning class removes ghost roads.
@@ -1112,17 +1378,34 @@ private:
 // phi, so they appear to be clustered. We want to pick only one road out of
 // the cluster. The roads are ranked by a sort code, which consists of the hit
 // composition and the pattern straightness. The ghost cleaning should be
-// aggressive enough, but not too aggressive that di-muon efficiency is
+// aggressive enough, but not too aggressive such that di-muon efficiency is
 // affected. At the end, a check of consistency with BX=0 is also applied.
 // The output of this classis the subset of roads that are not identified as
 // ghosts.
-// In this C++ version, a more complicated algorithm is implemented to be more
-// aggressive. But it might not be implementable in firmware. A simple local
-// maximum finding algorithm, as in the current EMTF, might suffice.
+// In this C++ version, a more complicated algorithm is implemented, which uses
+// clustering to do aggressive cleaning. But it might not be implementable
+// in firmware. A simple local maximum finding algorithm should also work
+// although the results are slightly different (not fully tested).
 
 class RoadCleaning {
 public:
   void run(const std::vector<Road>& roads, std::vector<Road>& clean_roads) const {
+
+    // Optimize for CPU processing?
+    bool optimize_for_cpu = true;
+
+    if (optimize_for_cpu) {
+      apply_cleaning(roads, clean_roads);
+    } else {
+      apply_cleaning_unoptimized(roads, clean_roads);
+    }
+
+    apply_additional_cleaning(clean_roads);
+    return;
+  }
+
+private:
+  void apply_cleaning(const std::vector<Road>& roads, std::vector<Road>& clean_roads) const {
     // Skip if no roads
     if (roads.empty()) {
       return;
@@ -1221,7 +1504,6 @@ public:
       RoadPtr first_road = amap[group.front()];  // iphi range
       RoadPtr last_road = amap[group.back()];    // iphi range
       tmp_clean_roads_groupinfo.emplace_back(first_road->iphi, last_road->iphi);
-
     }  // end loop over groups
 
     if (tmp_clean_roads.empty())
@@ -1236,23 +1518,25 @@ public:
 
       // Check for intersection in the iphi range
       for (size_t j=0; j<i; ++j) {
-        const auto& group_i = tmp_clean_roads_groupinfo[ind[i]];
-        const auto& group_j = tmp_clean_roads_groupinfo[ind[j]];
-        int32_t x1 = group_i.first;
-        int32_t x2 = group_i.second;
-        int32_t y1 = group_j.first;
-        int32_t y2 = group_j.second;
+        if (tmp_clean_roads[ind[i]].ieta == tmp_clean_roads[ind[j]].ieta) {  // same zone
+          const auto& group_i = tmp_clean_roads_groupinfo[ind[i]];
+          const auto& group_j = tmp_clean_roads_groupinfo[ind[j]];
+          int32_t x1 = group_i.first;
+          int32_t x2 = group_i.second;
+          int32_t y1 = group_j.first;
+          int32_t y2 = group_j.second;
 
-        // No intersect between two ranges (x1, x2), (y1, y2): (x2 < y1) || (x1 > y2)
-        // Intersect: !((x2 < y1) || (x1 > y2)) = (x2 >= y1) and (x1 <= y2)
-        // Allow +/-2 due to extrapolation-to-EMTF error
-        if (((x2+2) >= y1) && ((x1-2) <= y2)) {
-          keep = false;
-          break;
+          // No intersect between two ranges (x1, x2), (y1, y2): (x2 < y1) || (x1 > y2)
+          // Intersect: !((x2 < y1) || (x1 > y2)) = (x2 >= y1) and (x1 <= y2)
+          // Allow +/-2 due to extrapolation-to-EMTF error
+          if (((x2+2) >= y1) && ((x1-2) <= y2)) {
+            keep = false;
+            break;
+          }
         }
       }  // end inner loop over tmp_clean_roads[:i]
 
-      // Do not share ME1/1, ME1/2, ME0, MB1, MB2
+      // Do not share ME1/1, ME1/2, RE1/2, GE1/1, ME0, MB1, MB2
       if (keep) {
         using int32_t_pair = std::pair<int32_t, int32_t>;  // emtf_layer, emtf_phi
 
@@ -1261,6 +1545,8 @@ public:
           for (const auto& hit : hits) {
             if ((hit.emtf_layer == 0) ||
                 (hit.emtf_layer == 1) ||
+                (hit.emtf_layer == 5) ||
+                (hit.emtf_layer == 9) ||
                 (hit.emtf_layer == 11) ||
                 (hit.emtf_layer == 12) ||
                 (hit.emtf_layer == 13) ) {
@@ -1285,18 +1571,124 @@ public:
         }  // end inner loop over tmp_clean_roads[:i]
       }
 
-      // Finally, check consistency with BX=0
       if (keep) {
         const auto& road_i = tmp_clean_roads[ind[i]];
-        if (select_bx_zero(road_i)) {
-          clean_roads.push_back(road_i);
-        }
+        clean_roads.push_back(road_i);
       }
-    }  // end loop over tmp_clean_roads
+    }  // end loop over tmp_clean_roads.size()
     return;
   }
 
-private:
+  void apply_cleaning_unoptimized(const std::vector<Road>& roads, std::vector<Road>& clean_roads) const {
+    std::vector<bool> roads_mask(roads.size(), true);  // true: keep the road
+
+    for (int32_t ieta = 0; ieta != PATTERN_BANK_NETA; ++ieta) {
+      if (ieta == 6) {  // For now, ignore zone 6
+        continue;
+      }
+
+      // Fill the quality codes
+      std::array<int, PATTERN_X_SEARCH_MAX+1> quality_codes;
+      quality_codes.fill(0);
+
+      for (const auto& road : roads) {
+        if (road.ieta == ieta) {
+          int this_code = road.sort_code;
+          if (quality_codes.at(road.iphi) < this_code) {
+            quality_codes.at(road.iphi) = this_code;
+          }
+        }
+      }
+
+      // Check if this quality code is the (local) maximum
+      size_t iroad = 0;
+      for (const auto& road : roads) {
+        if (road.ieta == ieta) {
+          int this_code = road.sort_code;
+
+          // Center quality is the current one
+          int qc = quality_codes.at(road.iphi);
+          // Left and right qualities are the neighbors
+          // Protect against the right end and left end special cases
+          int qr = (road.iphi == PATTERN_X_SEARCH_MAX) ? 0 : quality_codes.at(road.iphi+1);
+          int ql = (road.iphi == 0) ? 0 : quality_codes.at(road.iphi-1);
+
+          // Cancellation conditions
+          if ((this_code <= ql) || (this_code < qr) || (this_code < qc)) {  // this pattern is lower quality than neighbors
+            roads_mask.at(iroad) = false;  // cancel
+          }
+        }
+        ++iroad;
+      }
+    }
+
+    // Do the cancellation
+    std::vector<Road> tmp_clean_roads;
+    std::vector<int32_t> tmp_clean_roads_sortcode;
+    {
+      size_t iroad = 0;
+      for (const auto& road : roads) {
+        if (roads_mask.at(iroad) == true) {
+          tmp_clean_roads.push_back(road);
+          tmp_clean_roads_sortcode.push_back(road.sort_code);
+        }
+        ++iroad;
+      }
+    }
+
+    if (tmp_clean_roads.empty())
+      return;
+
+    // Sort by 'sort code'
+    const std::vector<size_t>& ind = my_argsort(tmp_clean_roads_sortcode, true);  // sort reverse
+
+    // Loop over the sorted roads, kill the siblings
+    for (size_t i=0; i<tmp_clean_roads.size(); ++i) {
+      bool keep = true;
+
+      // Do not share ME1/1, ME1/2, RE1/2, GE1/1, ME0, MB1, MB2
+      if (keep) {
+        using int32_t_pair = std::pair<int32_t, int32_t>;  // emtf_layer, emtf_phi
+
+        constexpr auto make_hit_set = [](const auto& hits) {
+          std::set<int32_t_pair> s;
+          for (const auto& hit : hits) {
+            if ((hit.emtf_layer == 0) ||
+                (hit.emtf_layer == 1) ||
+                (hit.emtf_layer == 5) ||
+                (hit.emtf_layer == 9) ||
+                (hit.emtf_layer == 11) ||
+                (hit.emtf_layer == 12) ||
+                (hit.emtf_layer == 13) ) {
+              s.insert(std::make_pair(hit.endsec*100 + hit.emtf_layer, hit.emtf_phi));
+            }
+          }
+          return s;
+        };
+
+        const auto& road_i = tmp_clean_roads[ind[i]];
+        const std::set<int32_t_pair>& s1 = make_hit_set(road_i.hits);
+        for (size_t j=0; j<i; ++j) {
+          const auto& road_j = tmp_clean_roads[ind[j]];
+          const std::set<int32_t_pair>& s2 = make_hit_set(road_j.hits);
+
+          std::vector<int32_t_pair> v_intersection;
+          std::set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(), std::back_inserter(v_intersection));
+          if (!v_intersection.empty()) {  // has sharing
+            keep = false;
+            break;
+          }
+        }  // end inner loop over tmp_clean_roads[:i]
+      }
+
+      if (keep) {
+        const auto& road_i = tmp_clean_roads[ind[i]];
+        clean_roads.push_back(road_i);
+      }
+    }  // end loop over tmp_clean_roads.size()
+    return;
+  }
+
   bool select_bx_zero(const Road& road) const {
     int bx_counter1 = 0;  // count hits with BX <= -1
     int bx_counter2 = 0;  // count hits with BX == 0
@@ -1318,8 +1710,77 @@ private:
     }
 
     //bool ret = (bx_counter1 < 2) && (bx_counter2 >= 2);
-    bool ret = (bx_counter1 <= 3) && (bx_counter2 >= 2) && (bx_counter3 <= 2);
+    bool ret = (bx_counter1 <= 2) && (bx_counter2 >= 2) && (bx_counter3 <= 2);
     return ret;
+  }
+
+  bool select_theta_aligned(Road& road) const {  // pass by reference to modify road.hits
+    std::vector<int32_t> road_hits_thetas;
+    std::transform(road.hits.begin(), road.hits.end(), std::back_inserter(road_hits_thetas),
+        [](const auto& hit) -> int32_t { return hit.emtf_theta; });
+    int32_t road_theta_median = my_median_unsorted(road_hits_thetas);
+
+    std::vector<Hit> tmp_road_hits;
+    for (const auto& hit : road.hits) {
+      int32_t type    = hit.type;
+      int32_t station = hit.station;
+      int32_t ring    = hit.ring;
+
+      int32_t dtheta = std::abs(hit.emtf_theta - road_theta_median);
+      int32_t cut = 12;
+      if (type == TriggerPrimitive::kCSC) {
+        if (station == 1) {
+          cut = 4;
+        } else {
+          cut = 2;
+        }
+      } else if (type == TriggerPrimitive::kRPC) {
+        if (ring == 1) {
+          cut = 2;
+        } else {
+          cut = 8;
+        }
+      } else if (type == TriggerPrimitive::kGEM) {
+        cut = 6;
+      } else if (type == TriggerPrimitive::kME0) {
+        cut = 4;
+      } else {
+        cut = 12;
+      }
+
+      if (road.quality >= 5) {
+        if (dtheta <= cut) {
+          tmp_road_hits.push_back(hit);
+        }
+      } else {
+        if (dtheta <= (cut*2)) {
+          tmp_road_hits.push_back(hit);
+        }
+      }
+    }
+
+    // Overwrite road hits
+    std::swap(road.hits, tmp_road_hits);
+
+    // Overwrite road mode
+    road.mode = util.find_emtf_road_mode(road.hits);
+
+    // Check whether the road is OK, after the road hits are overwritten
+    bool accept = util.find_emtf_road_accept(road.ieta, road.hits);
+    return accept;
+  }
+
+  void apply_additional_cleaning(std::vector<Road>& clean_roads) const {
+    // Finally, check consistency with BX=0
+    std::vector<Road> tmp_clean_roads;
+    std::swap(tmp_clean_roads, clean_roads);
+
+    for (auto&& road_i : tmp_clean_roads) {
+      if (select_bx_zero(road_i) && select_theta_aligned(road_i)) {
+        clean_roads.push_back(road_i);
+      }
+    }
+    return;
   }
 };
 
@@ -1353,7 +1814,8 @@ public:
         patterns_xc[i] = util.find_pattern_x_inverse(xc);
       }
 
-      // Find median phi and theta
+      // Find the median phi and theta
+      // Note: they do not have to be exact. An approximation is good enough, provided that it is stable against outliers.
       std::vector<int32_t> road_hits_phis;
       std::transform(road.hits.begin(), road.hits.end(), std::back_inserter(road_hits_phis),
           [&patterns_xc](const auto& hit) -> int32_t { return (hit.emtf_phi - patterns_xc[hit.emtf_layer]); });
@@ -1424,22 +1886,35 @@ class PtAssignment {
 public:
   explicit PtAssignment() {
     std::string cmssw_base = std::getenv("CMSSW_BASE");
-    //pbFileName = "/src/L1Trigger/L1TMuonEndCap/data/emtfpp_tf_graphs/model_graph.26.pb";
-    pbFileName = "/src/L1Trigger/L1TMuonEndCap/data/emtfpp_tf_graphs/model_graph.27.pb";
+    pbFileName = "/src/L1Trigger/L1TMuonEndCap/data/emtfpp_tf_graphs/model_graph.29.pb";
     pbFileName = cmssw_base + pbFileName;
-    inputName = "input_1";
-    outputNames = {"regr/BiasAdd", "discr/Sigmoid"};
+    inputName = "batch_normalization_1_input";
+    outputNames = {"dense_4/BiasAdd"};
 
     graphDef = tensorflow::loadGraphDef(pbFileName);
     assert(graphDef != nullptr);
     session = tensorflow::createSession(graphDef);
     assert(session != nullptr);
+
+    // Add 2nd NN dedicated for displaced muons.
+    pbFileName2 = "/src/L1Trigger/L1TMuonEndCap/data/emtfpp_tf_graphs/model_graph.displ.3.pb";
+    pbFileName2 = cmssw_base + pbFileName2;
+    inputName2 = "batch_normalization_1_input";
+    outputNames2 = {"dense_5/BiasAdd"};
+
+    graphDef2 = tensorflow::loadGraphDef(pbFileName2);
+    assert(graphDef2 != nullptr);
+    session2 = tensorflow::createSession(graphDef2);
+    assert(session2 != nullptr);
   }
 
   // Destructor
   ~PtAssignment() {
     tensorflow::closeSession(session);
     delete graphDef;
+
+    tensorflow::closeSession(session2);
+    delete graphDef2;
   }
 
   // Copy constructor
@@ -1449,6 +1924,12 @@ public:
     pbFileName = other.pbFileName;
     inputName = other.inputName;
     outputNames = other.outputNames;
+
+    graphDef2 = other.graphDef2;
+    session2 = other.session2;
+    pbFileName2 = other.pbFileName2;
+    inputName2 = other.inputName2;
+    outputNames2 = other.outputNames2;
   }
 
   // Copy assignment
@@ -1459,6 +1940,12 @@ public:
       pbFileName = other.pbFileName;
       inputName = other.inputName;
       outputNames = other.outputNames;
+
+      graphDef2 = other.graphDef2;
+      session2 = other.session2;
+      pbFileName2 = other.pbFileName2;
+      inputName2 = other.inputName2;
+      outputNames2 = other.outputNames2;
     }
     return *this;
   }
@@ -1486,6 +1973,24 @@ public:
   void predict(const Road& road, Feature& feature, Prediction& prediction) const {
     preprocessing(road, feature);
     call_tensorflow(feature, prediction);
+    postprocessing(road, feature, prediction);
+
+    // Add 2nd NN dedicated for displaced muons.
+    // It overwrites 'prediction', but not 'feature'.
+    bool add_displ = true;
+    if (add_displ) {
+      Feature feature_displ;
+      Prediction prediction_displ;
+      feature_displ.fill(0);
+      prediction_displ.fill(0);
+
+      preprocessing_displ(road, feature_displ);
+      call_tensorflow_displ(feature_displ, prediction_displ);
+      postprocessing_displ(road, feature_displ, prediction_displ);
+
+      prediction.at(3) = prediction_displ.at(0);  // y_displ
+      prediction.at(6) = prediction_displ.at(1);  // d0_displ
+    }
     return;
   }
 
@@ -1519,12 +2024,12 @@ private:
       x_time[hit_lay] = hit.emtf_time;
     }
 
-    // Pack the 36 variables
+    // Pack the 36 features
     // 20 (CSC) + 8 (RPC) + 4 (GEM) + 4 (ME0)
     feature = {{
-        x_phi  [0], x_phi  [1], x_phi  [2], x_phi  [3], x_phi  [4] , x_phi  [5],
+        x_phi  [0], x_phi  [1], x_phi  [2], x_phi  [3], x_phi  [4] , x_phi  [5] ,
         x_phi  [6], x_phi  [7], x_phi  [8], x_phi  [9], x_phi  [10], x_phi  [11],
-        x_theta[0], x_theta[1], x_theta[2], x_theta[3], x_theta[4] , x_theta[5],
+        x_theta[0], x_theta[1], x_theta[2], x_theta[3], x_theta[4] , x_theta[5] ,
         x_theta[6], x_theta[7], x_theta[8], x_theta[9], x_theta[10], x_theta[11],
         x_bend [0], x_bend [1], x_bend [2], x_bend [3], x_bend [4] , x_bend [11],
         x_qual [0], x_qual [1], x_qual [2], x_qual [3], x_qual [4] , x_qual [11]
@@ -1540,12 +2045,300 @@ private:
     float* d = input.flat<float>().data();
     std::copy(feature.begin(), feature.end(), d);
     tensorflow::run(session, { { inputName, input } }, outputNames, &outputs);
-    assert(outputs.size() == NPREDICTIONS);
+    assert(outputs.size() == 1);
     assert(prediction.size() == NPREDICTIONS);
 
     const float reg_pt_scale = 100.;  // a scale factor applied to regression during training
-    prediction.at(0) = outputs[0].matrix<float>()(0, 0) / reg_pt_scale; // q/pT
-    prediction.at(1) = outputs[1].matrix<float>()(0, 0); // PU discr
+    const float reg_dxy_scale = 0.4;  // a scale factor applied to regression during training
+
+    auto relu = [&](double x) {
+      // ReLU(x) = max(0, x)
+      return (x >= 0.) ? x : 0;
+    };
+    auto softplus = [&](double x) {
+      // Softplus f(x) = log(1+exp(x))
+      return relu(x) + std::log1p(std::exp(-std::abs(x)));
+    };
+    auto get_loc = [&](double loc) {
+      double c = std::log(std::expm1(0.5 * reg_pt_scale));  // shifted to 2 GeV
+      loc = loc + c;
+      loc = (loc < 1./500 * reg_pt_scale) ? (1./500 * reg_pt_scale) : loc;
+      return loc;
+    };
+    auto get_sign = [&](double sign) {
+      return (sign >= 0.) ? 1 : -1;
+    };
+    auto get_loc_dxy = [&](double loc) {
+      return loc;
+    };
+    auto get_sign_dxy = [&](double sign) {
+      return 1e0;
+    };
+    auto get_scale = [&](double scale) {
+      return 1e-5 + softplus(0.01 * scale);
+    };
+
+    prediction.at(0) = get_loc(outputs[0].matrix<float>()(0, 0));
+    prediction.at(1) = get_sign(outputs[0].matrix<float>()(0, 1));
+    prediction.at(2) = get_scale(outputs[0].matrix<float>()(0, 2));
+    prediction.at(3) = get_loc(outputs[0].matrix<float>()(0, 3));
+    prediction.at(4) = get_sign(outputs[0].matrix<float>()(0, 4));
+    prediction.at(5) = get_scale(outputs[0].matrix<float>()(0, 5));
+    prediction.at(6) = get_loc_dxy(outputs[0].matrix<float>()(0, 6));
+    prediction.at(7) = get_sign_dxy(outputs[0].matrix<float>()(0, 7));
+    prediction.at(8) = get_scale(outputs[0].matrix<float>()(0, 8));
+
+    // Remove scale factor used during training
+    prediction.at(0) /= reg_pt_scale;
+    prediction.at(3) /= reg_pt_scale;
+    prediction.at(6) /= reg_dxy_scale;
+
+    // Include sign
+    prediction.at(0) *= prediction.at(1);
+    prediction.at(3) *= prediction.at(4);
+    prediction.at(6) *= prediction.at(7);
+    return;
+  }
+
+  void postprocessing(const Road& road, const Feature& feature, Prediction& prediction) const {
+    // Demote tracks with large d0
+    bool demote = false;
+    float y_pred = prediction.at(0);
+    float d0_pred = prediction.at(6);
+
+    float discr_pt_cut_low = 4.;
+    float discr_pt_cut_med = 8.;
+    float discr_pt_cut_high = 14.;
+    if (std::abs(1.0/y_pred) > discr_pt_cut_high) {       // >14 GeV
+      demote = (std::abs(d0_pred) > 20.);
+    } else if (std::abs(1.0/y_pred) > discr_pt_cut_med) { // 8-14 GeV
+      demote = (std::abs(d0_pred) > 25.);
+    } else if (std::abs(1.0/y_pred) > discr_pt_cut_low) { // 4-8 GeV
+      demote = (std::abs(d0_pred) > 30.);
+    }
+
+    if (demote) {
+      prediction.at(0) = 0.5;  // demote to 2 GeV
+    }
+    return;
+  }
+
+  void preprocessing_displ(const Road& road, Feature& feature) const {
+    static std::array<float, NLAYERS> x_phi;   // delta-phis = (raw phis - road_phi_median)
+    static std::array<float, NLAYERS> x_theta; // raw thetas
+    static std::array<float, NLAYERS> x_bend;
+    static std::array<float, NLAYERS> x_qual;
+    static std::array<float, NLAYERS> x_time;
+
+    // Initialize to zeros
+    x_phi.fill(0);
+    x_theta.fill(0);
+    x_bend.fill(0);
+    x_qual.fill(0);
+    x_time.fill(0);
+
+    // Set the values
+    for (const auto& hit : road.hits) {
+      int32_t hit_lay = hit.emtf_layer;
+
+      // Drop iRPC
+      if ((hit_lay == 7 || hit_lay == 8) && hit.ring == 1)
+        continue;
+      // Drop GE1/1, GE2/1, ME0, DT
+      if (hit_lay >= 9)
+        continue;
+
+      assert(std::abs(x_phi.at(hit_lay)) < 1e-7);   // sanity check
+      x_phi[hit_lay] = hit.old_emtf_phi;  // uses old_emtf_phi
+      assert(std::abs(x_theta.at(hit_lay)) < 1e-7); // sanity check
+      x_theta[hit_lay] = hit.emtf_theta;
+      assert(std::abs(x_bend.at(hit_lay)) < 1e-7);  // sanity check
+      x_bend[hit_lay] = hit.old_emtf_bend;  // uses old_emtf_bend
+      assert(std::abs(x_qual.at(hit_lay)) < 1e-7);  // sanity check
+      x_qual[hit_lay] = hit.emtf_qual;
+      assert(std::abs(x_time.at(hit_lay)) < 1e-7);  // sanity check
+      x_time[hit_lay] = hit.emtf_time;
+    }
+
+    // Mimic Phase-1 EMTF input calculations
+    // 6 delta Phis: S1-S2, S1-S3, S1-S4, S2-S3, S2-S4, S3-S4
+    // 6 delta Thetas: S1-S2, S1-S3, S1-S4, S2-S3, S2-S4, S3-S4
+    // 4 bends : set to zero if no CSC hit and thus RPC hit is used
+    // 1 FR bit: for ME1 only
+    // 1 Ring bit: for ME1 only
+    // 1 track Theta taken from stub coordinate in ME2, ME3, ME4 (in this priority)
+    // 4 RPC bits indicating if ME or RE hit was used in each station (S1, S2, S3, S4)
+    // Total: 23 variables
+    static std::array<float, 6> x_dphi;
+    static std::array<float, 6> x_dtheta;
+
+    static std::array<float, 4> x_phi_emtf;   // temporary
+    static std::array<float, 4> x_theta_emtf; // temporary
+    static std::array<float, 4> x_bend_emtf;
+    static std::array<float, 1> x_fr_emtf;
+    static std::array<float, 1> x_trk_theta;
+    static std::array<float, 1> x_me11ring;
+    static std::array<float, 4> x_rpcbit;
+
+    // Initialize to zeros
+    x_dphi.fill(0);
+    x_dtheta.fill(0);
+    //
+    x_phi_emtf.fill(0);
+    x_theta_emtf.fill(0);
+    x_bend_emtf.fill(0);
+    x_fr_emtf.fill(0);
+    x_trk_theta.fill(0);
+    x_me11ring.fill(0);
+    x_rpcbit.fill(0);
+
+    // Station 1
+    if (x_theta[0] > 1e-7) {  // ME1/1
+      x_phi_emtf[0]   = x_phi[0];
+      x_theta_emtf[0] = x_theta[0];
+      x_bend_emtf[0]  = x_bend[0];
+      x_fr_emtf[0]    = (x_qual[0] > 0) ? 1 : -1;
+    } else if (x_theta[1] > 1e-7) {  // ME1/2
+      x_phi_emtf[0]   = x_phi[1];
+      x_theta_emtf[0] = x_theta[1];
+      x_bend_emtf[0]  = x_bend[1];
+      x_fr_emtf[0]    = (x_qual[1] > 0) ? 1 : -1;
+      x_me11ring[0]   = 1;
+    } else if (x_theta[5] > 1e-7) {  // RE1
+      x_phi_emtf[0]   = x_phi[5];
+      x_theta_emtf[0] = x_theta[5];
+      x_bend_emtf[0]  = 0;
+      x_rpcbit[0]     = 1;
+    }
+
+    // Station 2
+    if (x_theta[2] > 1e-7) {  // ME2
+      x_phi_emtf[1]   = x_phi[2];
+      x_theta_emtf[1] = x_theta[2];
+      x_bend_emtf[1]  = x_bend[2];
+    } else if (x_theta[6] > 1e-7) {  // RE2
+      x_phi_emtf[1]   = x_phi[6];
+      x_theta_emtf[1] = x_theta[6];
+      x_bend_emtf[1]  = 0;
+      x_rpcbit[1]     = 1;
+    }
+
+    // Station 3
+    if (x_theta[3] > 1e-7) {  // ME3
+      x_phi_emtf[2]   = x_phi[3];
+      x_theta_emtf[2] = x_theta[3];
+      x_bend_emtf[2]  = x_bend[3];
+    } else if (x_theta[7] > 1e-7) {  // RE3
+      x_phi_emtf[2]   = x_phi[7];
+      x_theta_emtf[2] = x_theta[7];
+      x_bend_emtf[2]  = 0;
+      x_rpcbit[2]     = 1;
+    }
+
+    // Station 4
+    if (x_theta[4] > 1e-7) {  // ME4
+      x_phi_emtf[3]   = x_phi[4];
+      x_theta_emtf[3] = x_theta[4];
+      x_bend_emtf[3]  = x_bend[4];
+    } else if (x_theta[8] > 1e-7) {  // RE4
+      x_phi_emtf[3]   = x_phi[8];
+      x_theta_emtf[3] = x_theta[8];
+      x_bend_emtf[3]  = 0;
+      x_rpcbit[3]     = 1;
+    }
+
+    // Set x_trk_theta
+    if (x_theta[2] > 1e-7) {
+      x_trk_theta[0] = x_theta[2];
+    } else if (x_theta[3] > 1e-7) {
+      x_trk_theta[0] = x_theta[3];
+    } else if (x_theta[4] > 1e-7) {
+      x_trk_theta[0] = x_theta[4];
+    }
+
+    // Set x_dphi, x_dtheta
+    auto calc_delta = [](float a, float b) {
+      if ((a > 1e-7) && (b > 1e-7)) {
+        return static_cast<float>(a-b);
+      }
+      return 0.f;
+    };
+
+    x_dphi[0] = calc_delta(x_phi_emtf[0], x_phi_emtf[1]);
+    x_dphi[1] = calc_delta(x_phi_emtf[0], x_phi_emtf[2]);
+    x_dphi[2] = calc_delta(x_phi_emtf[0], x_phi_emtf[3]);
+    x_dphi[3] = calc_delta(x_phi_emtf[1], x_phi_emtf[2]);
+    x_dphi[4] = calc_delta(x_phi_emtf[1], x_phi_emtf[3]);
+    x_dphi[5] = calc_delta(x_phi_emtf[2], x_phi_emtf[3]);
+
+    x_dtheta[0] = calc_delta(x_theta_emtf[0], x_theta_emtf[1]);
+    x_dtheta[1] = calc_delta(x_theta_emtf[0], x_theta_emtf[2]);
+    x_dtheta[2] = calc_delta(x_theta_emtf[0], x_theta_emtf[3]);
+    x_dtheta[3] = calc_delta(x_theta_emtf[1], x_theta_emtf[2]);
+    x_dtheta[4] = calc_delta(x_theta_emtf[1], x_theta_emtf[3]);
+    x_dtheta[5] = calc_delta(x_theta_emtf[2], x_theta_emtf[3]);
+
+    // Pack the 23 features + 13 zeros used for padding
+    feature = {{
+      x_dphi     [0], x_dphi     [1], x_dphi     [2], x_dphi     [3], x_dphi     [4], x_dphi     [5],
+      x_dtheta   [0], x_dtheta   [1], x_dtheta   [2], x_dtheta   [3], x_dtheta   [4], x_dtheta   [5],
+      x_bend_emtf[0], x_bend_emtf[1], x_bend_emtf[2], x_bend_emtf[3], x_fr_emtf  [0], x_trk_theta[0],
+      x_me11ring [0], x_rpcbit   [0], x_rpcbit   [1], x_rpcbit   [2], x_rpcbit   [3], 0             ,
+      0             , 0             , 0             , 0             , 0             , 0             ,
+      0             , 0             , 0             , 0             , 0             , 0
+    }};
+    return;
+  }
+
+  void call_tensorflow_displ(const Feature& feature, Prediction& prediction) const {
+    const int nfeatures_displ = 23;    // 23 features
+    static tensorflow::Tensor input(tensorflow::DT_FLOAT, { 1, nfeatures_displ });
+    static std::vector<tensorflow::Tensor> outputs;
+    //assert(feature.size() == NFEATURES);
+
+    float* d = input.flat<float>().data();
+    //std::copy(feature.begin(), feature.end(), d);
+    std::copy(feature.begin(), feature.begin() + nfeatures_displ, d);
+    tensorflow::run(session2, { { inputName2, input } }, outputNames2, &outputs);
+    assert(outputs.size() == 1);
+    //assert(prediction.size() == NPREDICTIONS);
+
+    const float reg_pt_scale = 100.;  // a scale factor applied to regression during training
+    const float reg_dxy_scale = 1.0;  // a scale factor applied to regression during training
+
+    prediction.at(0) = outputs[0].matrix<float>()(0, 0);
+    prediction.at(1) = outputs[0].matrix<float>()(0, 1);
+
+    // Remove scale factor used during training
+    prediction.at(0) /= reg_pt_scale;
+    prediction.at(1) /= reg_dxy_scale;
+    return;
+  }
+
+  void postprocessing_displ(const Road& road, const Feature& feature, Prediction& prediction) const {
+    // Demote tracks with less than 3 stations (CSC/RPC)
+    bool demote = false;
+    int road_mode = 0;
+
+    for (const auto& hit : road.hits) {
+      int32_t hit_lay = hit.emtf_layer;
+      if (hit_lay == 0 || hit_lay == 1 || hit_lay == 5) {
+        road_mode |= (1 << 3);
+      } else if (hit_lay == 2 || hit_lay == 6) {
+        road_mode |= (1 << 2);
+      } else if (hit_lay == 3 || hit_lay == 7) {
+        road_mode |= (1 << 1);
+      } else if (hit_lay == 4 || hit_lay == 8) {
+        road_mode |= (1 << 0);
+      }
+    }
+
+    if (!(road_mode == 11 || road_mode == 13 || road_mode == 14 || road_mode == 15)) {
+      demote = true;
+    }
+    if (demote) {
+      prediction.at(0) = 0.5;  // demote to 2 GeV
+    }
     return;
   }
 
@@ -1555,6 +2348,12 @@ private:
   std::string pbFileName;
   std::string inputName;
   std::vector<std::string> outputNames;
+
+  tensorflow::GraphDef* graphDef2;
+  tensorflow::Session* session2;
+  std::string pbFileName2;
+  std::string inputName2;
+  std::vector<std::string> outputNames2;
 };
 
 // TrackProducer class does 2 things: apply scaling (or calibration) to the NN
@@ -1576,26 +2375,42 @@ public:
     s_max   = 60.;
     s_nbins = 120;
     s_step  = (s_max - s_min)/float(s_nbins);
-    s_lut   = {{  2.4605,  2.0075,  1.9042,  2.0762,  2.4325,  2.9043,  3.4101,  3.9232,
-                  4.4403,  4.9856,  5.5775,  6.2036,  6.8515,  7.5126,  8.1807,  8.8570,
-                  9.5343, 10.2031, 10.8651, 11.5340, 12.2164, 12.9187, 13.6537, 14.4093,
-                 15.1559, 15.8731, 16.5513, 17.2402, 17.9719, 18.7379, 19.5292, 20.3469,
-                 21.1514, 21.9302, 22.6964, 23.4417, 24.1086, 24.7471, 25.4113, 26.1038,
-                 26.7868, 27.4820, 28.2311, 29.0478, 29.9305, 30.8285, 31.6537, 32.3950,
-                 33.1279, 33.8928, 34.6529, 35.4154, 36.2441, 37.1817, 38.2494, 39.2588,
-                 40.1019, 40.8765, 41.6557, 42.4564, 43.2505, 44.0659, 44.9429, 45.8573,
-                 46.7469, 47.6586, 48.6987, 49.6689, 50.3389, 50.9753, 51.7242, 52.4922,
-                 53.2630, 54.0344, 54.8061, 55.5778, 56.3496, 57.1213, 57.8931, 58.6648,
-                 59.4366, 60.2083, 60.9800, 61.7518, 62.5235, 63.2953, 64.0670, 64.8387,
-                 65.6104, 66.3822, 67.1539, 67.9256, 68.6974, 69.4691, 70.2408, 71.0125,
-                 71.7843, 72.5560, 73.3277, 74.0995, 74.8712, 75.6429, 76.4146, 77.1864,
-                 77.9581, 78.7298, 79.5015, 80.2733, 81.0450, 81.8167, 82.5884, 83.3602,
-                 84.1319, 84.9036, 85.6754, 86.4471, 87.2188, 87.9905, 88.7623, 89.5340}};
+    s_lut   = {{  1.8219,  1.5725,  1.6237,  1.8672,  2.2298,  2.6692,  3.1724,  3.7226,
+                  4.3005,  4.8945,  5.4972,  6.1065,  6.7217,  7.3443,  7.9797,  8.6255,
+                  9.2779,  9.9339, 10.5868, 11.2340, 11.8745, 12.5056, 13.1352, 13.7707,
+                 14.3985, 15.0216, 15.6519, 16.2946, 16.9297, 17.5598, 18.1981, 18.8567,
+                 19.5345, 20.2317, 20.9849, 21.7932, 22.5650, 23.2764, 23.9233, 24.5326,
+                 25.1879, 25.9589, 26.8144, 27.6406, 28.3182, 28.9110, 29.4817, 30.0894,
+                 30.8001, 31.5674, 32.3055, 33.0457, 33.8479, 34.6975, 35.4941, 36.2179,
+                 36.9157, 37.6592, 38.5602, 39.6237, 40.7733, 41.9798, 43.2775, 44.6862,
+                 45.9872, 46.8917, 47.5905, 48.2057, 48.8099, 49.4649, 50.1705, 50.8610,
+                 51.5614, 52.2918, 53.0282, 53.7657, 54.5035, 55.2414, 55.9793, 56.7173,
+                 57.4553, 58.1933, 58.9314, 59.6694, 60.4074, 61.1454, 61.8834, 62.6214,
+                 63.3594, 64.0973, 64.8353, 65.5733, 66.3113, 67.0493, 67.7873, 68.5253,
+                 69.2633, 70.0012, 70.7392, 71.4772, 72.2152, 72.9532, 73.6912, 74.4292,
+                 75.1671, 75.9051, 76.6431, 77.3811, 78.1191, 78.8571, 79.5950, 80.3330,
+                 81.0710, 81.8090, 82.5470, 83.2849, 84.0229, 84.7609, 85.4989, 86.2369}};
+    s_lut_wp50 = {{1.8124,  1.6471,  1.6755,  1.8367,  2.0737,  2.3461,  2.6370,  2.9560,
+                  3.3248,  3.7365,  4.1760,  4.6336,  5.1040,  5.5834,  6.0695,  6.5604,
+                  7.0554,  7.5540,  8.0544,  8.5545,  9.0529,  9.5514, 10.0488, 10.5407,
+                 11.0263, 11.5075, 11.9870, 12.4668, 12.9474, 13.4297, 13.9161, 14.4090,
+                 14.9068, 15.4037, 15.8966, 16.3903, 16.8852, 17.3796, 17.8709, 18.3599,
+                 18.8473, 19.3375, 19.8375, 20.3540, 20.8927, 21.4490, 21.9967, 22.5160,
+                 23.0021, 23.4527, 23.8652, 24.2528, 24.6402, 25.0503, 25.4903, 25.9606,
+                 26.4660, 27.0031, 27.5589, 28.1126, 28.6454, 29.1493, 29.6322, 30.1029,
+                 30.5670, 31.0276, 31.4843, 31.9233, 32.3456, 32.7724, 33.2167, 33.6778,
+                 34.1510, 34.6287, 35.1127, 35.6217, 36.1572, 36.7039, 37.2606, 37.8230,
+                 38.3763, 38.9074, 39.4167, 39.9213, 40.4378, 40.9845, 41.5990, 42.2614,
+                 42.9157, 43.5348, 44.1085, 44.6446, 45.1498, 45.6289, 46.0819, 46.5207,
+                 46.9573, 47.3828, 47.7878, 48.1767, 48.5567, 48.9351, 49.3208, 49.7180,
+                 50.1278, 50.5593, 51.0135, 51.4887, 51.9777, 52.4705, 52.9646, 53.4593,
+                 53.9542, 54.4493, 54.9446, 55.4399, 55.9353, 56.4307, 56.9261, 57.4215}};
     assert(s_lut.size() == (size_t) s_nbins);
+    assert(s_lut_wp50.size() == (size_t) s_nbins);
   }
 
   int digitize(float x) const {
-    x = (x < s_min) ? (s_min) : ((s_max - 1e-5) < x ? (s_max - 1e-5) : x);  // clip
+    x = std::clamp(x, s_min, static_cast<float>(s_max - 1e-5));
     x = (x - s_min) / (s_max - s_min) * float(s_nbins);  // convert to bin number
     int binx = static_cast<int>(x);
     binx = (binx == s_nbins-1) ? (binx-1) : binx;  // avoid boundary
@@ -1622,27 +2437,76 @@ public:
     return trg_pt;
   }
 
-  bool pass_trigger(int ndof, int mode, int strg, int zone, int theta_median, float y_pred, float y_discr) const {
-    int ipt1 = strg;
-    int ipt2 = util.find_pt_bin(y_pred);
-    int quality1 = util.find_emtf_road_quality(ipt1);
-    int quality2 = util.find_emtf_road_quality(ipt2);
-    bool strg_ok = (quality2 <= (quality1+1));
-
+  float get_trigger_pt_wp50(float y_pred) const {
     float xml_pt = std::abs(1.0/y_pred);
-
-    // Apply cuts
-    bool trigger = false;
-    if (xml_pt > discr_pt_cut_high) {       // >14 GeV (98.5% coverage)
-      trigger = (y_discr > 0.9600);
-    } else if (xml_pt > discr_pt_cut_med) { // 8-14 GeV (98.5% coverage)
-      trigger = (y_discr > 0.8932);
-    } else if (xml_pt > discr_pt_cut_low) { // 4-8 GeV (99.0% coverage)
-      trigger = (y_discr > 0.2000);
-    } else {
-      trigger = (y_discr >= 0.) && strg_ok;
+    if (xml_pt <= 2.) {  // do not use the LUT if below 2 GeV
+      return xml_pt;
     }
+
+    int binx = digitize(xml_pt);
+    float x0 = float(binx) * s_step;
+    float x1 = float(binx+1) * s_step;
+    float y0 = s_lut_wp50.at(binx);
+    float y1 = s_lut_wp50.at(binx+1);
+    float trg_pt = interpolate(xml_pt, x0, x1, y0, y1);
+    return trg_pt;
+  }
+
+  bool pass_trigger(int ndof, int mode, int strg, int zone, int theta_median, float y_pred, float y_discr, float d0_pred) const {
+    //int ipt1 = strg;
+    //int ipt2 = util.find_pt_bin(y_pred);
+    //int quality1 = util.find_emtf_road_quality(ipt1);
+    //int quality2 = util.find_emtf_road_quality(ipt2);
+    //bool strg_ok = (quality2 <= (quality1+1));
+    //float xml_pt = std::abs(1.0/y_pred);
+    bool trigger = true;
+
+    //// OBSOLETE since v4
+    //// Apply cuts on d0
+    //if (xml_pt > discr_pt_cut_high) {       // >14 GeV
+    //  trigger = (std::abs(d0_pred) < 20.);
+    //} else if (xml_pt > discr_pt_cut_med) { // 8-14 GeV
+    //  trigger = (std::abs(d0_pred) < 25.);
+    //} else if (xml_pt > discr_pt_cut_low) { // 4-8 GeV
+    //  trigger = (std::abs(d0_pred) < 30.);
+    //} else {
+    //  trigger = (y_discr >= 0.);
+    //}
+
+    //// OBSOLETE since v3
+    //// Apply cuts
+    //bool trigger = false;
+    //if (xml_pt > discr_pt_cut_high) {       // >14 GeV (98.5% coverage)
+    //  trigger = (y_discr > 0.9600);
+    //} else if (xml_pt > discr_pt_cut_med) { // 8-14 GeV (98.5% coverage)
+    //  trigger = (y_discr > 0.8932);
+    //} else if (xml_pt > discr_pt_cut_low) { // 4-8 GeV (99.0% coverage)
+    //  trigger = (y_discr > 0.2000);
+    //} else {
+    //  trigger = (y_discr >= 0.) && strg_ok;
+    //}
     return trigger;
+  }
+
+  float theta_to_eta_f(int theta_int) const {
+    static const std::vector<float> theta_to_eta_lut = {
+      2.599, 2.566, 2.534, 2.503, 2.473, 2.444, 2.415, 2.388, 2.361, 2.334,
+      2.309, 2.284, 2.259, 2.236, 2.212, 2.190, 2.167, 2.145, 2.124, 2.103,
+      2.083, 2.063, 2.043, 2.024, 2.005, 1.986, 1.968, 1.950, 1.932, 1.915,
+      1.898, 1.881, 1.864, 1.848, 1.832, 1.816, 1.800, 1.785, 1.770, 1.755,
+      1.740, 1.726, 1.711, 1.697, 1.683, 1.670, 1.656, 1.642, 1.629, 1.616,
+      1.603, 1.590, 1.578, 1.565, 1.553, 1.541, 1.529, 1.517, 1.505, 1.493,
+      1.482, 1.470, 1.459, 1.448, 1.436, 1.425, 1.415, 1.404, 1.393, 1.382,
+      1.372, 1.362, 1.351, 1.341, 1.331, 1.321, 1.311, 1.301, 1.291, 1.282,
+      1.272, 1.262, 1.253, 1.244, 1.234, 1.225, 1.216, 1.207, 1.198, 1.189,
+      1.180, 1.171, 1.162, 1.154, 1.145, 1.136, 1.128, 1.119, 1.111, 1.103,
+      1.094, 1.086, 1.078, 1.070, 1.062, 1.054, 1.046, 1.038, 1.030, 1.022,
+      1.014, 1.007, 0.999, 0.991, 0.984, 0.976, 0.969, 0.961, 0.954, 0.946,
+      0.939, 0.932, 0.924, 0.917, 0.910, 0.903, 0.896, 0.888, 0.881, 0.874,
+      0.867, 0.860, 0.853, 0.847, 0.840, 0.833, 0.826, 0.819, 0.813, 0.806,
+      0.799, 0.793, 0.786, 0.779, 0.773, 0.766, 0.760, 0.753, 0.747, 0.741
+    };
+    return theta_to_eta_lut.at(theta_int);
   }
 
   void run(const std::vector<Road>& slim_roads, const std::vector<Prediction>& predictions,
@@ -1654,30 +2518,38 @@ public:
     for (const auto& road : slim_roads) {
       const auto& prediction = *predictions_it++;
 
-      float y_pred     = prediction[0];
-      float y_discr    = prediction[1];
+      float y_pred     = prediction.at(0);  // vtx-constrained pT
+      float y_discr    = 1.0;               // PU discr (obsolete)
+      float d1_pred    = prediction.at(3);  // vtx-unconstrained pT
+      float d0_pred    = prediction.at(6);  // d0
       int ndof         = road.hits.size();
       int mode         = road.mode;
       int strg         = road.ipt;
       int zone         = road.ieta;
       int phi_median   = road.phi_median;
       int theta_median = road.theta_median;
+      float eta        = theta_to_eta_f(theta_median);  // absolute eta
 
-      bool passed = pass_trigger(ndof, mode, strg, zone, theta_median, y_pred, y_discr);
+      bool passed = pass_trigger(ndof, mode, strg, zone, theta_median, y_pred, y_discr, d0_pred);
 
       if (passed) {
         float xml_pt = std::abs(1.0/y_pred);
         float pt = get_trigger_pt(y_pred);
+        if ((2.15 <= eta) && (eta <= 2.25)) {
+          pt = get_trigger_pt_wp50(y_pred);
+        }
+
+        float pt_displ = get_trigger_pt(d1_pred);
 
         int trk_q = (y_pred < 0) ? -1 : +1;
         //Track(int16_t vt_endcap, int16_t vt_sector, int16_t vt_ipt, int16_t vt_ieta, int16_t vt_iphi,
-        //      const road_hits_t& vt_hits, int16_t vt_mode, int16_t vt_quality, int16_t vt_zone,
+        //      const road_hits_t& vt_hits, int16_t vt_mode, int16_t vt_quality, int16_t vt_sort_code,
         //      float vt_xml_pt, float vt_pt, int16_t vt_q, float vt_y_pred, float vt_y_discr,
-        //      int32_t vt_emtf_phi, int32_t vt_emtf_theta)
+        //      float vt_y_displ, float vt_d0_displ, float vt_pt_displ, int32_t vt_emtf_phi, int32_t vt_emtf_theta)
         tracks.emplace_back(road.endcap, road.sector, road.ipt, road.ieta, road.iphi,
-                            road.hits, mode, road.quality, zone,
+                            road.hits, mode, road.quality, road.sort_code,
                             xml_pt, pt, trk_q, y_pred, y_discr,
-                            phi_median, theta_median);
+                            d1_pred, d0_pred, pt_displ, phi_median, theta_median);
       }
     }  // end loop over slim_roads, predictions
     return;
@@ -1694,8 +2566,8 @@ private:
   float s_max {0.};
   int   s_nbins {0};
   float s_step {0.};
-  //std::vector<float> s_lut;
   std::array<float, 120> s_lut {};
+  std::array<float, 120> s_lut_wp50 {};
 };
 
 // GhostBusting class remove ghost tracks.
@@ -1704,17 +2576,13 @@ private:
 
 class GhostBusting {
 public:
-  void run(std::vector<Track>& tracks) const {
+  void run(EMTFTrackCollection& tracks) const {
 
-    std::vector<Track> tracks_after_gb;
+    EMTFTrackCollection tracks_after_gb;
 
-    // Sort by (zone, y_discr)
-    // zone is reordered such that zone 6 has the lowest priority.
-    constexpr auto sort_tracks_f = [](const Track& lhs, const Track& rhs) {
-      // (max zone, max y_discr) is better
-      auto lhs_zone = (lhs.zone+1) % 7;
-      auto rhs_zone = (rhs.zone+1) % 7;
-      return std::tie(lhs_zone, lhs.y_discr) > std::tie(rhs_zone, rhs.y_discr);
+    // Sort by 'sort code'
+    constexpr auto sort_tracks_f = [](const EMTFTrack& lhs, const EMTFTrack& rhs) {
+      return lhs.Winner() > rhs.Winner();  // EMTFTrack::Winner() was hacked to store Track::sort_code
     };
     std::sort(tracks.begin(), tracks.end(), sort_tracks_f);
 
@@ -1722,41 +2590,46 @@ public:
     for (size_t i=0; i<tracks.size(); ++i) {
       bool keep = true;
 
-      // Do not share ME1/1, ME1/2, ME0, MB1, MB2
+      // Do not share ME1/1, ME1/2, RE1/2, GE1/1, ME0, MB1, MB2
       // Need to check for neighbor sector hits
       if (keep) {
         using int32_t_pair = std::pair<int32_t, int32_t>;  // emtf_layer, emtf_phi
 
-        constexpr auto make_hit_set = [](const auto& hits) {
+        constexpr auto make_hit_set = [](const auto& conv_hits) {
           std::set<int32_t_pair> s;
-          for (const auto& hit : hits) {
-            if ((hit.emtf_layer == 0) ||
-                (hit.emtf_layer == 1) ||
-                (hit.emtf_layer == 11) ||
-                (hit.emtf_layer == 12) ||
-                (hit.emtf_layer == 13) ) {
+          for (const auto& conv_hit : conv_hits) {
+            int hit_emtf_layer = util.find_emtf_layer(conv_hit);
+            if ((hit_emtf_layer == 0) ||
+                (hit_emtf_layer == 1) ||
+                (hit_emtf_layer == 5) ||
+                (hit_emtf_layer == 9) ||
+                (hit_emtf_layer == 11) ||
+                (hit_emtf_layer == 12) ||
+                (hit_emtf_layer == 13) ) {
 
-              int32_t tmp_endsec = hit.endsec;
-              int32_t tmp_emtf_phi = hit.emtf_phi;
-              if (hit.emtf_phi < (22*60)) {  // is a neighbor hit
-                if ((hit.endsec == 0) || (hit.endsec == 6)) {
+              int32_t hit_endsec = util.find_endsec(conv_hit);
+              int32_t hit_emtf_phi = util.find_emtf_phi(conv_hit);
+              int32_t tmp_endsec = hit_endsec;
+              int32_t tmp_emtf_phi = hit_emtf_phi;
+              if (hit_emtf_phi < (22*60)) {  // is a neighbor hit
+                if ((hit_endsec == 0) || (hit_endsec == 6)) {
                   tmp_endsec += 5;
-                } else if ((1 <= hit.endsec && hit.endsec <= 5) || (7 <= hit.endsec && hit.endsec <= 11)) {
+                } else if ((1 <= hit_endsec && hit_endsec <= 5) || (7 <= hit_endsec && hit_endsec <= 11)) {
                   tmp_endsec -= 1;
                 }
                 tmp_emtf_phi += (60*60);
               }
-              s.insert(std::make_pair(tmp_endsec*100 + hit.emtf_layer, tmp_emtf_phi));
+              s.insert(std::make_pair(tmp_endsec*100 + hit_emtf_layer, tmp_emtf_phi));
             }
           }
           return s;
         };
 
         const auto& track_i = tracks[i];
-        const std::set<int32_t_pair>& s1 = make_hit_set(track_i.hits);
+        const std::set<int32_t_pair>& s1 = make_hit_set(track_i.Hits());
         for (size_t j=0; j<i; ++j) {
           const auto& track_j = tracks[j];
-          const std::set<int32_t_pair>& s2 = make_hit_set(track_j.hits);
+          const std::set<int32_t_pair>& s2 = make_hit_set(track_j.Hits());
 
           std::vector<int32_t_pair> v_intersection;
           std::set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(), std::back_inserter(v_intersection));
@@ -1809,15 +2682,16 @@ public:
 
       // Setters
       // Part 1: from src/PrimitiveMatching.cc
-      emtf_track.set_endcap     ( (track.endcap == 1) ? 1 : -1 );
+      emtf_track.set_endcap     ( track.endcap );
       emtf_track.set_sector     ( track.sector );
       emtf_track.set_sector_idx ( (track.endcap == 1) ? (track.sector - 1) : (track.sector + 5) );
       emtf_track.set_bx         ( 0 );
-      emtf_track.set_zone       ( track.zone );
+      emtf_track.set_zone       ( track.ieta );
       //emtf_track.set_ph_num     ( road.Key_zhit() );
       //emtf_track.set_ph_q       ( road.Quality_code() );
       //emtf_track.set_rank       ( road.Quality_code() );
       //emtf_track.set_winner     ( road.Winner() );
+      emtf_track.set_winner     ( track.sort_code ); // hacked to store Track::sort_code
       emtf_track.clear_Hits();
       emtf_track.set_Hits( emtf_track_hits );
 
@@ -1841,9 +2715,15 @@ public:
       //emtf_track.set_PtLUT    ( ptlut_data );
       emtf_track.set_pt_XML ( track.xml_pt );
       emtf_track.set_pt     ( track.pt );
+      emtf_track.set_pt_dxy ( track.pt_displ );
+      emtf_track.set_dxy    ( track.d0_displ );
       emtf_track.set_charge ( track.q );
+      emtf_track.set_invpt_prompt( track.y_pred );
+      emtf_track.set_invpt_displ ( track.y_displ );
       //
-      int gmt_pt  = aux().getGMTPt(emtf_track.Pt());
+      int gmt_pt = aux().getGMTPt(emtf_track.Pt());
+      int gmt_pt_dxy = aux().getGMTPtDxy(emtf_track.Pt_dxy());
+      int gmt_dxy = aux().getGMTDxy(emtf_track.Dxy());
       int gmt_phi = aux().getGMTPhiV2(emtf_track.Phi_fp());
       int gmt_eta = aux().getGMTEta(emtf_track.Theta_fp(), emtf_track.Endcap());
       bool promoteMode7 = false;
@@ -1857,6 +2737,8 @@ public:
         charge_valid = 0;
       std::pair<int, int> gmt_charge = std::make_pair(charge, charge_valid);
       emtf_track.set_gmt_pt           ( gmt_pt );
+      emtf_track.set_gmt_pt_dxy       ( gmt_pt_dxy );
+      emtf_track.set_gmt_dxy          ( gmt_dxy );
       emtf_track.set_gmt_phi          ( gmt_phi );
       emtf_track.set_gmt_eta          ( gmt_eta );
       emtf_track.set_gmt_quality      ( gmt_quality );
@@ -1905,10 +2787,7 @@ void Phase2SectorProcessor::build_tracks(
   assig.run(slim_roads, features, predictions);
   trkprod.run(slim_roads, predictions, tracks);
 
-  best_tracks.insert(best_tracks.end(), tracks.begin(), tracks.end());  // best_tracks collects tracks from all sectors (CUIDADO: doesn't work!)
-  if (endcap_ == 2 && sector_ == 6) {  // using the last sector processor as uGMT to do ghost busting
-    ghost.run(best_tracks);
-  }
+  best_tracks.insert(best_tracks.end(), tracks.begin(), tracks.end());
 
   // Debug
   bool debug = false;
@@ -1956,6 +2835,7 @@ void Phase2SectorProcessor::debug_tracks(
         << id[4] << ", " << id[5] << ") lay: " << hit.emtf_layer
         << " ph: " << hit.emtf_phi << " (" << util.find_pattern_x(hit.emtf_phi)
         << ") th: " << hit.emtf_theta << " bd: " << hit.emtf_bend
+        << " old_ph: " << hit.old_emtf_phi << " old_bd: " << hit.old_emtf_bend
         << " ql: " << hit.emtf_qual << " tp: " << hit.sim_tp << std::endl;
   }
 
@@ -2015,7 +2895,8 @@ void Phase2SectorProcessor::debug_tracks(
         << id[4] << ") nhits: " << trk.hits.size()
         << " mode: " << trk.mode << " pt: " << trk.pt
         << " y_pred: " << trk.y_pred << " y_discr: " << trk.y_discr
-        << std::endl;
+        << " y_displ: " << trk.y_displ << " d0_displ: " << trk.d0_displ
+        << " pt_displ: " << trk.pt_displ << std::endl;
 
     j = 0;
     for (const auto& hit : trk.hits) {
@@ -2026,6 +2907,16 @@ void Phase2SectorProcessor::debug_tracks(
           << " ph: " << hit.emtf_phi << " th: " << hit.emtf_theta << std::endl;
     }
   }
+}
+
+// _____________________________________________________________________________
+void Phase2SectorProcessor::ghost_busting(
+    // Input & output
+    EMTFTrackCollection& best_emtf_tracks
+) const {
+  // Run the algorithms
+  ghost.run(best_emtf_tracks);
+  return;
 }
 
 }  // namespace experimental

@@ -32,7 +32,7 @@ void EMTFSubsystemCollector::extractPrimitives(
   iEvent.getByToken(token2, cscCompDigis);
 
   // My comparator digi fitter
-  std::unique_ptr<EMTFCSCComparatorDigiFitter> emtf_fitter = std::make_unique<EMTFCSCComparatorDigiFitter>();
+  auto emtf_fitter = std::make_unique<EMTFCSCComparatorDigiFitter>();
 
   // Loop over chambers
   auto chamber = cscDigis->begin();
@@ -101,13 +101,13 @@ void EMTFSubsystemCollector::extractPrimitives(
         if (!x.empty())
           ++nhitlayers;
       }
-      if (nhitlayers < 3) {
-        edm::LogWarning("L1T") << "EMTF CSC format error in station " << detid.station() << ", ring " << detid.ring()
-            << ": nhitlayers = " << nhitlayers << " (min = 3)";
-        continue;
-      }
+      //if (nhitlayers < 3) {
+      //  edm::LogWarning("L1T") << "EMTF CSC format error in station " << detid.station() << ", ring " << detid.ring()
+      //      << ": nhitlayers = " << nhitlayers << " (min = 3)";
+      //  continue;
+      //}
 
-      const EMTFCSCComparatorDigiFitter::FitResult& res = emtf_fitter->fit(compDigisAllLayers, stagger, tmp_strip);
+      const auto& res = emtf_fitter->fit(compDigisAllLayers, stagger, tmp_strip);
       //std::cout << "fit result: " << res.position << " " << res.slope << " " << res.chi2 << " halfStrip: " << tmp_strip << std::endl;
 
       // Find half-strip after fit
@@ -132,16 +132,16 @@ void EMTFSubsystemCollector::extractPrimitives(
       // Encode fractional strip in 3 bits (4 including sign), which corresponds to 1/16-strip unit
       float frac_position = position - static_cast<float>(strip);
       int frac_strip = static_cast<int>(std::round(std::abs(frac_position) * 8));
-      frac_strip = std::min(std::max(frac_strip, 0), 7);
+      frac_strip = std::clamp(frac_strip, 0, 7);
       frac_strip = (frac_position >= 0) ? frac_strip : -frac_strip;
 
       // Encode bend in 6 bits, which corresponds to 1/32-strip unit
       int bend = static_cast<int>(std::round(res.slope * 16));
-      bend = std::min(std::max(bend, -32), 31);
+      bend = std::clamp(bend, -32, 31);
 
       //// Encode quality in 5 bits, which corresponds to 0.25 step from 0 to 8
       //int quality = static_cast<int>(std::round(res.chi2 * 4));
-      //quality = std::min(std::max(quality, 0), 31);
+      //quality = std::clamp(quality, 0, 31);
 
       // Jan 2019: Use number of hits as quality
       int quality = nhitlayers;
