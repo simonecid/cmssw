@@ -35,6 +35,6 @@ Phase1L1TJetProducer = cms.EDProducer('Phase1L1TJetProducer',
   sinPhi = cms.vdouble(0.04374, 0.13087, 0.21701, 0.30149, 0.38365, 0.46289, 0.53858, 0.61015),
   cosPhi = cms.vdouble(0.99904, 0.9914, 0.97617, 0.95347, 0.92348, 0.88642, 0.84257, 0.79229),
   htPtThreshold = cms.double(30),
-  outputSumsCollectionName = cms.string("HTandMET")
+  outputSumsCollectionName = cms.string("HTandMET"),
   vetoZeroPt = cms.bool(True)
 )
