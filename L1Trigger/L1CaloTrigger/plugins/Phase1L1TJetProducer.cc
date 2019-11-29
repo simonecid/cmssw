@@ -75,11 +75,6 @@ class Phase1L1TJetProducer : public edm::one::EDProducer<edm::one::SharedResourc
       
       reco::CaloJet _buildJetFromSeed(const TH2F & caloGrid, const std::tuple<int, int> & seed);
       
-      /// computes ht, adds jet pt to ht only if the pt of the jet is above the ht calculation threshold
-  
-      l1t::EtSum _computeHT(const std::vector<reco::CaloJet>& l1jetVector);
-      l1t::EtSum _computeMET(const TH2F & caloGrid);
-
       // <3 handy method to fill the calogrid with whatever type
       template <class Container>
       void _fillCaloGrid(TH2F & caloGrid, const Container & triggerPrimitives);
@@ -87,8 +82,6 @@ class Phase1L1TJetProducer : public edm::one::EDProducer<edm::one::SharedResourc
       edm::EDGetTokenT<edm::View<reco::Candidate>> *_inputCollectionTag;
 
       std::vector<double> _etaBinning;
-      std::vector<double> _sinPhi;
-      std::vector<double> _cosPhi;
       size_t _nBinsEta;
       unsigned int _nBinsPhi;
       double _phiLow;
@@ -96,12 +89,10 @@ class Phase1L1TJetProducer : public edm::one::EDProducer<edm::one::SharedResourc
       unsigned int _jetIEtaSize;
       unsigned int _jetIPhiSize;
       double _seedPtThreshold;
-      double _htPtThreshold;
       bool _puSubtraction;
       bool _vetoZeroPt;
 
       std::string _outputCollectionName;
-      std::string _outputSumsCollectionName;
 
 };
 
@@ -109,8 +100,6 @@ class Phase1L1TJetProducer : public edm::one::EDProducer<edm::one::SharedResourc
 Phase1L1TJetProducer::Phase1L1TJetProducer(const edm::ParameterSet& iConfig):
   // getting configuration settings
   _etaBinning(iConfig.getParameter<std::vector<double> >("etaBinning")),
-  _sinPhi(iConfig.getParameter<std::vector<double> >("sinPhi")),
-  _cosPhi(iConfig.getParameter<std::vector<double> >("cosPhi")),
   _nBinsEta(this -> _etaBinning.size() - 1),
   _nBinsPhi(iConfig.getParameter<unsigned int>("nBinsPhi")),
   _phiLow(iConfig.getParameter<double>("phiLow")),
@@ -118,15 +107,12 @@ Phase1L1TJetProducer::Phase1L1TJetProducer(const edm::ParameterSet& iConfig):
   _jetIEtaSize(iConfig.getParameter<unsigned int>("jetIEtaSize")),
   _jetIPhiSize(iConfig.getParameter<unsigned int>("jetIPhiSize")),
   _seedPtThreshold(iConfig.getParameter<double>("seedPtThreshold")),
-  _htPtThreshold(iConfig.getParameter<double>("htPtThreshold")),
   _puSubtraction(iConfig.getParameter<bool>("puSubtraction")),
   _vetoZeroPt(iConfig.getParameter<bool>("vetoZeroPt")),
-  _outputCollectionName(iConfig.getParameter<std::string>("outputCollectionName")),
-  _outputSumsCollectionName(iConfig.getParameter<std::string>("outputSumsCollectionName"))
+  _outputCollectionName(iConfig.getParameter<std::string>("outputCollectionName"))
 {
   this -> _inputCollectionTag = new edm::EDGetTokenT< edm::View<reco::Candidate> >(consumes< edm::View<reco::Candidate> > (iConfig.getParameter< edm::InputTag >("inputCollectionTag")));  
   produces<std::vector<reco::CaloJet> >( this -> _outputCollectionName ).setBranchAlias(this -> _outputCollectionName);
-  produces< BXVector<l1t::EtSum> >( this -> _outputSumsCollectionName ).setBranchAlias(this -> _outputSumsCollectionName);
 }
 
 Phase1L1TJetProducer::~Phase1L1TJetProducer()
@@ -192,77 +178,12 @@ void Phase1L1TJetProducer::produce(edm::Event& iEvent, const edm::EventSetup& iS
       l1jetVector = this -> _buildJetsFromSeeds(lCaloGrid, seedsVector);
     }
 
-
-    // computing sums
-    l1t::EtSum lHT = this -> _computeHT(l1jetVector);
-    l1t::EtSum lMET = this -> _computeMET(lCaloGrid);
-
-    //packing in BXVector for event saving
-    std::unique_ptr< BXVector<l1t::EtSum> > lSumVectorPtr(new BXVector<l1t::EtSum>(2));
-    lSumVectorPtr -> push_back(0, lHT);
-    lSumVectorPtr -> push_back(0, lMET);
-    std::cout << "HT-MET: " << lHT.pt() << "\t" << lMET.pt() << std::endl;
     //saving jets
     std::unique_ptr< std::vector<reco::CaloJet> > l1jetVectorPtr(new std::vector<reco::CaloJet>(l1jetVector));
     iEvent.put(std::move(l1jetVectorPtr), this -> _outputCollectionName);
-    //saving sums
-    iEvent.put(std::move(lSumVectorPtr), this -> _outputSumsCollectionName);
   }
 
   return;
-
-}
-
-// computes ht, adds jet pt to ht only if the pt of the jet is above the ht calculation threshold
-l1t::EtSum Phase1L1TJetProducer::_computeHT(const std::vector<reco::CaloJet>& l1jetVector) 
-{
-  double lHT = 0;
-  for (const auto & jet: l1jetVector)
-  {
-    lHT += (jet.pt() >= this -> _htPtThreshold) ? jet.pt() : 0;
-  }
-
-  reco::Candidate::PolarLorentzVector lHTVector;
-  lHTVector.SetPt(lHT);
-  lHTVector.SetEta(0);
-  lHTVector.SetPhi(0);
-  l1t::EtSum lHTSum(lHTVector, l1t::EtSum::EtSumType::kTotalHt);
-
-  return lHTSum;
-}
-
-l1t::EtSum Phase1L1TJetProducer::_computeMET(const TH2F & caloGrid) 
-{
-
-  int nBinsX = caloGrid.GetNbinsX();
-  int nBinsY = caloGrid.GetNbinsY();
-
-  double lTotalPx = 0;
-  double lTotalPy = 0;
-
-  
-  for (int iPhi = 1; iPhi <= nBinsY; iPhi++)
-  {
-    double lSinPhi = this -> _sinPhi[iPhi - 1];
-    double lCosPhi = this -> _cosPhi[iPhi - 1];
-    double lPhiSliceTotalPt = 0;
-    for (int iEta = 1; iEta <= nBinsX; iEta++)
-    {
-      lPhiSliceTotalPt += caloGrid.GetBinContent(iEta, iPhi);
-    }
-    lTotalPx += (lPhiSliceTotalPt * lCosPhi);
-    lTotalPy += (lPhiSliceTotalPt * lSinPhi);
-  }
-
-  double lMET = sqrt(lTotalPx * lTotalPx + lTotalPy * lTotalPy);
-  //packing in EtSum object
-  reco::Candidate::PolarLorentzVector lMETVector;
-  lMETVector.SetPt(lMET);
-  lMETVector.SetEta(0);
-  lMETVector.SetPhi(0);
-  l1t::EtSum lMETSum(lMETVector, l1t::EtSum::EtSumType::kMissingEt);
-
-  return lMETSum;
 
 }
 
@@ -459,10 +380,10 @@ void Phase1L1TJetProducer::_fillCaloGrid(TH2F & caloGrid, const Container & trig
   //Filling the calo grid with the primitives
   for (auto primitiveIterator = triggerPrimitives.begin(); primitiveIterator != triggerPrimitives.end(); primitiveIterator++)
     {
-      if(primitiveIterator->eta() >= 0 && primitiveIterator->eta() < 1.5 && primitiveIterator->phi() >= 0 && primitiveIterator->phi() < 0.7)
-      {
-        std::cout << "input pt-eta-phi: " << (float) primitiveIterator -> pt() << "\t" <<(float) primitiveIterator -> eta() << "\t" << (float) primitiveIterator -> phi() << std::endl;
-      }
+      // if(primitiveIterator->eta() >= 0 && primitiveIterator->eta() < 1.5 && primitiveIterator->phi() >= 0 && primitiveIterator->phi() < 0.7)
+      // {
+      //   std::cout << "input pt-eta-phi: " << (float) primitiveIterator -> pt() << "\t" <<(float) primitiveIterator -> eta() << "\t" << (float) primitiveIterator -> phi() << std::endl;
+      // }
       caloGrid.Fill((float) primitiveIterator -> eta(), (float) primitiveIterator -> phi(), (float) primitiveIterator -> pt());
     }
   return;
