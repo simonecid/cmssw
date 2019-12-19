@@ -22,8 +22,8 @@ Phase1L1TJetProducer = cms.EDProducer('Phase1L1TJetProducer',
   inputCollectionTag = cms.InputTag("l1pfCandidates", "Puppi"),
   etaBinning = caloEtaSegmentation,
   nBinsPhi = cms.uint32(72),
-  phiLow = cms.double(0),
-  phiUp = cms.double(6.30),
+  phiLow = cms.double(-3.15),
+  phiUp = cms.double(3.15),
   # nBinsPhi = cms.uint32(8),
   # phiLow = cms.double(0),
   # phiUp = cms.double(0.7),
@@ -32,6 +32,5 @@ Phase1L1TJetProducer = cms.EDProducer('Phase1L1TJetProducer',
   seedPtThreshold = cms.double(5), # GeV
   puSubtraction = cms.bool(False),
   outputCollectionName = cms.string("UncalibratedPhase1L1TJetFromPfCandidates"),
-  htPtThreshold = cms.double(30),
   vetoZeroPt = cms.bool(True)
 )
