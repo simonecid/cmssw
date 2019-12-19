@@ -359,7 +359,7 @@ std::vector<reco::CaloJet> Phase1L1TJetProducer::_buildJetsFromSeeds(const TH2F 
   for (const auto& seed: seeds)
   {
     reco::CaloJet jet = this -> _buildJetFromSeed(caloGrid, seed);
-    std::cout << "jet pt-eta-phi: " << (float) jet.pt() << "\t" <<(float) jet.eta() << "\t" << (float) jet.phi() << std::endl;
+    // std::cout << "jet pt-eta-phi: " << (float) jet.pt() << "\t" <<(float) jet.eta() << "\t" << (float) jet.phi() << std::endl;
     jets.push_back(jet);
   }
 
