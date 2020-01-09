@@ -28,11 +28,13 @@ process.out = cms.OutputModule("PoolOutputModule",
   ),
 )
 
+#eta binning of the HLS FW
 caloEtaSegmentation = cms.vdouble(
   0.0, 0.0833, 0.1666, 0.2499, 0.3332, 0.4165, 0.4998, 0.5831, 0.6664, 0.7497, 
   0.833, 0.9163, 0.9996, 1.0829, 1.1662, 1.2495, 1.3328, 1.4161, 1.5
 )
 
+# sets up jet finder
 process.Phase1L1TJetProducer = cms.EDProducer('Phase1L1TJetProducer',
   inputCollectionTag = cms.InputTag("l1pfCandidates", "Puppi"),
   etaBinning = caloEtaSegmentation,
@@ -47,9 +49,11 @@ process.Phase1L1TJetProducer = cms.EDProducer('Phase1L1TJetProducer',
   vetoZeroPt = cms.bool(True)
 )
 
+# lut configuration, you can generate your own with test/generateConSinPhi.py 
 sinPhi = cms.vdouble(0.04374, 0.13087, 0.21701, 0.30149, 0.38365, 0.46289, 0.53858, 0.61015)
 cosPhi = cms.vdouble(0.99904, 0.9914, 0.97617, 0.95347, 0.92348, 0.88642, 0.84257, 0.79229)
 
+# sum module
 process.Phase1L1TSumsProducer = cms.EDProducer('Phase1L1TSumsProducer',
   particleCollectionTag = cms.InputTag("l1pfCandidates", "Puppi"),
   jetCollectionTag = cms.InputTag("Phase1L1TJetProducer", "UncalibratedPhase1L1TJetFromPfCandidates"),
