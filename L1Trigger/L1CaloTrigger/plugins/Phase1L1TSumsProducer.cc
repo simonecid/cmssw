@@ -27,7 +27,6 @@ Description: Produces jets with a phase-1 like sliding window algorithm using a 
 */
 //
 // Original Simone Bologna
-// Created: Mon Jul 02 2018
 //
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -47,10 +46,6 @@ Description: Produces jets with a phase-1 like sliding window algorithm using a 
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/L1Trigger/interface/BXVector.h"
-
-#include "TH2F.h"
-
-#include <algorithm>
 
 class Phase1L1TSumsProducer : public edm::one::EDProducer<edm::one::SharedResources> {
    public:
@@ -81,7 +76,7 @@ class Phase1L1TSumsProducer : public edm::one::EDProducer<edm::one::SharedResour
 
 };
 
-
+// initialises plugin configuration and prepares ROOT file for saving the sums
 Phase1L1TSumsProducer::Phase1L1TSumsProducer(const edm::ParameterSet& iConfig):
   // getting configuration settings
   _sinPhi(iConfig.getParameter<std::vector<double> >("sinPhi")),
@@ -98,12 +93,15 @@ Phase1L1TSumsProducer::Phase1L1TSumsProducer(const edm::ParameterSet& iConfig):
   produces< BXVector<l1t::EtSum> >( this -> _outputCollectionName ).setBranchAlias(this -> _outputCollectionName);
 }
 
+// delete dynamically allocated tags
 Phase1L1TSumsProducer::~Phase1L1TSumsProducer()
 {
   delete this -> _particleCollectionTag;
   delete this -> _jetCollectionTag;
 }
 
+// creates object to access the jets and the pf candidates collection
+// then computes the sums and stores them in the EDM root file
 void Phase1L1TSumsProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
@@ -132,6 +130,7 @@ void Phase1L1TSumsProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
 l1t::EtSum Phase1L1TSumsProducer::_computeHT(const std::vector<reco::CaloJet>& l1jetVector) 
 {
   double lHT = 0;
+  // range-based for loop that goes through all the trigger jets in the event
   for (const auto & jet: l1jetVector)
   {
     lHT += (jet.pt() >= this -> _htPtThreshold) ? jet.pt() : 0;
@@ -141,26 +140,36 @@ l1t::EtSum Phase1L1TSumsProducer::_computeHT(const std::vector<reco::CaloJet>& l
   lHTVector.SetPt(lHT);
   lHTVector.SetEta(0);
   lHTVector.SetPhi(0);
+  // kTotalHt the the EtSum enumerator type for the HT
   l1t::EtSum lHTSum(lHTVector, l1t::EtSum::EtSumType::kTotalHt);
 
   return lHTSum;
 }
 
+// computes MET
+// first computes in which bin of the histogram the input falls in
+// the phi bin index is used to retrieve the sin-cos value from the LUT emulator
+// the pt of the input is multiplied by that sin cos value to obtain px and py that is added to the total event px & py
+// after all the inputs have been processed we compute the total pt of the event, and set that as MET
 template <class ParticleCollection>
 l1t::EtSum Phase1L1TSumsProducer::_computeMET(const ParticleCollection & particleCollection) 
 {
 
   double lTotalPx = 0;
   double lTotalPy = 0;
-
+  // range-based for loop, that goes through the particle flow inputs
   for (const auto & particle : particleCollection)
   {
     double lParticlePhi = particle.phi();
     double lParticlePt = particle.pt();
+    // skip particle if it does not fall in the histogram range
     if ((lParticlePhi < this -> _phiLow) || (lParticlePhi > this -> _phiUp)) continue;
+    // computing bin index
     unsigned int iPhi = ( lParticlePhi - this -> _phiLow ) / this -> _phiStep;
+    // retrieving sin cos from LUT emulator
     double lSinPhi = this -> _sinPhi[iPhi];
     double lCosPhi = this -> _cosPhi[iPhi];
+    // computing px and py of the particle and adding it to the total px and py of the event
     lTotalPx += (lParticlePt * lCosPhi);
     lTotalPy += (lParticlePt * lSinPhi);
   }
@@ -171,6 +180,7 @@ l1t::EtSum Phase1L1TSumsProducer::_computeMET(const ParticleCollection & particl
   lMETVector.SetPt(lMET);
   lMETVector.SetEta(0);
   lMETVector.SetPhi(0);
+  // kMissingEt is the enumerator for MET
   l1t::EtSum lMETSum(lMETVector, l1t::EtSum::EtSumType::kMissingEt);
 
   return lMETSum;
