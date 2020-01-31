@@ -41,7 +41,7 @@ Description: analyzes histograms pictures using ROOT and saves them to a folder
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
-#include "TCanvas.h"
+#include "TFile.h"
 
 #include "TH2F.h"
 
@@ -62,8 +62,6 @@ class HistogramBuilderAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedRes
       void _fillCaloGrid(TH2F & caloGrid, const Container & triggerPrimitives);
 
       edm::EDGetTokenT<edm::View<reco::Candidate>> *_inputCollectionTag;
-      // histogram containing our clustered inputs
-      TH2F* _caloGrid;
 
       std::vector<double> _etaBinning;
       size_t _nBinsEta;
@@ -88,37 +86,38 @@ HistogramBuilderAnalyzer::HistogramBuilderAnalyzer(const edm::ParameterSet& iCon
   this -> _outputFolderName = iConfig.getParameter<std::string>("outputFolderName");
 
   this -> _inputCollectionTag = new edm::EDGetTokenT< edm::View<reco::Candidate> >(consumes< edm::View<reco::Candidate> > (iConfig.getParameter< edm::InputTag >("inputCollectionTag")));
-  this -> _caloGrid = new TH2F("caloGrid", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
-  this -> _caloGrid -> GetXaxis() -> SetTitle("#eta");
-  this -> _caloGrid -> GetYaxis() -> SetTitle("#phi");
   
 }
 
 HistogramBuilderAnalyzer::~HistogramBuilderAnalyzer()
 {
   delete this -> _inputCollectionTag;
-  if (this -> _caloGrid) delete this -> _caloGrid;
 }
 
 void HistogramBuilderAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-
   edm::Handle < edm::View< reco::Candidate > > inputCollectionHandle;
   iEvent.getByToken(*(this -> _inputCollectionTag), inputCollectionHandle);
-  // dumping the data
-  this -> _caloGrid -> Reset();
-  this -> _fillCaloGrid<>(*(this -> _caloGrid), *inputCollectionHandle);
+
   edm::RunNumber_t lRunNumber = iEvent.run();
   edm::LuminosityBlockNumber_t lLumiBlock = iEvent.luminosityBlock();
-  edm::EventNumber_t lEventNumber = iEvent.id().event();
-  TCanvas lCanvas("canvas", "canvas", 1024, 1024);
-  lCanvas.SetCanvasSize(1024, 1024);
-  this -> _caloGrid -> SetStats(false);
-  this -> _caloGrid -> Draw("COL");
+  edm::EventNumber_t lEventNumber = iEvent.id().event();               
+  // creating a root file where the histogram will be saved
   std::string lFileName;
   std::ostringstream lISS;
   lISS << this -> _outputFolderName << "/event_" << lRunNumber << "_" << lLumiBlock << "_" << lEventNumber << ".root";
-  lCanvas.SaveAs(lISS.str().c_str(), "root");
+  TFile* lDestFile = new TFile(lISS.str().c_str(), "RECREATE");
+  TH2F* caloGrid = new TH2F("caloGrid", "Calorimeter grid", this -> _nBinsEta, this-> _etaBinning.data(), this -> _nBinsPhi, this -> _phiLow, this -> _phiUp);
+  caloGrid -> GetXaxis() -> SetTitle("#eta");
+  caloGrid -> GetYaxis() -> SetTitle("#phi");
+
+  // dumping the data
+  this -> _fillCaloGrid<>(*caloGrid, *inputCollectionHandle);
+
+  // saving histo and closing file
+  caloGrid -> Write();
+
+  delete lDestFile;
   return;
 
 }
