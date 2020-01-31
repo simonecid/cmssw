@@ -117,8 +117,8 @@ void HistogramBuilderAnalyzer::analyze(const edm::Event& iEvent, const edm::Even
   this -> _caloGrid -> Draw("COL");
   std::string lFileName;
   std::ostringstream lISS;
-  lISS << this -> _outputFolderName << "/event_" << lRunNumber << "_" << lLumiBlock << "_" << lEventNumber << ".png";
-  lCanvas.SaveAs(lISS.str().c_str(), "png");
+  lISS << this -> _outputFolderName << "/event_" << lRunNumber << "_" << lLumiBlock << "_" << lEventNumber << ".root";
+  lCanvas.SaveAs(lISS.str().c_str(), "root");
   return;
 
 }

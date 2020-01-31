@@ -15,7 +15,7 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 process.source = process.source = cms.Source("PoolSource",
   # fileNames = readFiles,
   fileNames = cms.untracked.vstring(
-   "file:/storage/sb17498/CMSSW_SumsDevel/CMSSW_10_6_1_patch2/src/TTBAR_Merged.root",
+   "file:/hdfs/user/sb17498/CMS_Phase_2/jetMETStudies/QCD_TTBar_PU200_10_4_0_MTD/TTBAR_QCD_Merged.root",
   )
 )
 
