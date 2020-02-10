@@ -64,14 +64,19 @@ class Phase1L1TSumsProducer : public edm::one::EDProducer<edm::one::SharedResour
       edm::EDGetTokenT<edm::View<reco::Candidate>> *_particleCollectionTag;
       edm::EDGetTokenT<std::vector<reco::CaloJet> > *_jetCollectionTag;
 
+      // holds the sin and cos for HLs LUT emulation
       std::vector<double> _sinPhi;
       std::vector<double> _cosPhi;
       unsigned int _nBinsPhi;
+      // lower phi value
       double _phiLow;
+      // higher phi value
       double _phiUp;
+      // size of a phi bin
       double _phiStep;
+      // threshold for ht calculation
       double _htPtThreshold;
-
+      // label of sums
       std::string _outputCollectionName;
 
 };
@@ -87,13 +92,21 @@ Phase1L1TSumsProducer::Phase1L1TSumsProducer(const edm::ParameterSet& iConfig):
   _htPtThreshold(iConfig.getParameter<double>("htPtThreshold")),
   _outputCollectionName(iConfig.getParameter<std::string>("outputCollectionName"))
 {
+  // three things are happening in this line:
+  // 1) retrieving the tag for the input particle collection with "iConfig.getParameter(string)"
+  // 2) telling CMSSW that I will retrieve a collection of pf candidates later with "consumes< edm::View<reco::Candidate>(InputTag)"
+  // 3) obtaining a token that will enable me to access data later with "new edm::EDGetTokenT< edm::View<reco::Candidate> >""
   this -> _particleCollectionTag = new edm::EDGetTokenT< edm::View<reco::Candidate> >(consumes< edm::View<reco::Candidate> > (iConfig.getParameter< edm::InputTag >("particleCollectionTag")));  
+  // same thing here, I am setting myself up to access jets down the road
   this -> _jetCollectionTag = new edm::EDGetTokenT< std::vector<reco::CaloJet> >(consumes< std::vector<reco::CaloJet> > (iConfig.getParameter< edm::InputTag >("jetCollectionTag")));  
   this -> _phiStep = ( this -> _phiUp - this -> _phiLow ) / this -> _nBinsPhi;
+  // preparing CMSSW to save my sums later
+  // "setBranchAlias" specifies the label that my output will have in the output file
+  // produces <> sets up the producer to save stuff later
   produces< BXVector<l1t::EtSum> >( this -> _outputCollectionName ).setBranchAlias(this -> _outputCollectionName);
 }
 
-// delete dynamically allocated tags
+// delete dynamically allocated tags (which were created with new)
 Phase1L1TSumsProducer::~Phase1L1TSumsProducer()
 {
   delete this -> _particleCollectionTag;
@@ -105,16 +118,20 @@ Phase1L1TSumsProducer::~Phase1L1TSumsProducer()
 void Phase1L1TSumsProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
+  // accessing my data
+  // handle is an intermediate object between the data on file and on my local memory
   edm::Handle < edm::View< reco::Candidate > > particleCollectionHandle;
   edm::Handle < std::vector<reco::CaloJet> > jetCollectionHandle;
+  // this retrieves my data and puts it up for use in my local memory, the handle now behaves like a pointer to the memory area holding my data
+  // i.e. I can access it with the * operator or -> operator
   iEvent.getByToken(*(this -> _particleCollectionTag), particleCollectionHandle);
   iEvent.getByToken(*(this -> _jetCollectionTag), jetCollectionHandle);
   
-  // computing sums
+  // computing sums and storing them in sum object
   l1t::EtSum lHT = this -> _computeHT(*jetCollectionHandle);
   l1t::EtSum lMET = this -> _computeMET<>(*particleCollectionHandle);
 
-  //packing in BXVector for event saving
+  //packing sums in BXVector for event saving
   std::unique_ptr< BXVector<l1t::EtSum> > lSumVectorPtr(new BXVector<l1t::EtSum>(2));
   lSumVectorPtr -> push_back(0, lHT);
   lSumVectorPtr -> push_back(0, lMET);
@@ -187,12 +204,12 @@ l1t::EtSum Phase1L1TSumsProducer::_computeMET(const ParticleCollection & particl
 
 }
 
+// I have no idea what this does, it is created by default by CMSSW
 void Phase1L1TSumsProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
-  //The following says we do not know what parameters are allowed so do no validation
-  // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
   desc.setUnknown();
   descriptions.addDefault(desc);
 }
 
+// creates the plugin for later use in python
 DEFINE_FWK_MODULE(Phase1L1TSumsProducer);

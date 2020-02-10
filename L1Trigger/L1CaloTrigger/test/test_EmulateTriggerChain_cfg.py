@@ -66,6 +66,7 @@ process.Phase1L1TSumsProducer = cms.EDProducer('Phase1L1TSumsProducer',
   outputCollectionName = cms.string("Sums"),
 )
 
+# runs the jet finder and sum producer
 process.p = cms.Path(
   process.Phase1L1TJetProducer + 
   process.Phase1L1TSumsProducer
