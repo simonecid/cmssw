@@ -47,6 +47,8 @@ Description: Produces jets with a phase-1 like sliding window algorithm using a 
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/L1Trigger/interface/BXVector.h"
 
+#include <cmath>
+
 class Phase1L1TSumsProducer : public edm::one::EDProducer<edm::one::SharedResources> {
    public:
       explicit Phase1L1TSumsProducer(const edm::ParameterSet&);
@@ -68,10 +70,15 @@ class Phase1L1TSumsProducer : public edm::one::EDProducer<edm::one::SharedResour
       std::vector<double> _sinPhi;
       std::vector<double> _cosPhi;
       unsigned int _nBinsPhi;
+      
       // lower phi value
       double _phiLow;
       // higher phi value
       double _phiUp;
+      // lower eta value
+      double _etaLow;
+      // higher eta value
+      double _etaUp;
       // size of a phi bin
       double _phiStep;
       // threshold for ht calculation
@@ -89,6 +96,8 @@ Phase1L1TSumsProducer::Phase1L1TSumsProducer(const edm::ParameterSet& iConfig):
   _nBinsPhi(iConfig.getParameter<unsigned int>("nBinsPhi")),
   _phiLow(iConfig.getParameter<double>("phiLow")),
   _phiUp(iConfig.getParameter<double>("phiUp")),
+  _etaLow(iConfig.getParameter<double>("etaLow")),
+  _etaUp(iConfig.getParameter<double>("etaUp")),
   _htPtThreshold(iConfig.getParameter<double>("htPtThreshold")),
   _outputCollectionName(iConfig.getParameter<std::string>("outputCollectionName"))
 {
@@ -135,7 +144,7 @@ void Phase1L1TSumsProducer::produce(edm::Event& iEvent, const edm::EventSetup& i
   std::unique_ptr< BXVector<l1t::EtSum> > lSumVectorPtr(new BXVector<l1t::EtSum>(2));
   lSumVectorPtr -> push_back(0, lHT);
   lSumVectorPtr -> push_back(0, lMET);
-  // std::cout << "HT-MET sums prod: " << lHT.pt() << "\t" << lMET.pt() << std::endl;
+  // std::cout << "HT: " << lHT.pt() << "\t MET pt - phi" << lMET.pt() << std::endl;
   //saving sums
   iEvent.put(std::move(lSumVectorPtr), this -> _outputCollectionName);
 
@@ -150,7 +159,17 @@ l1t::EtSum Phase1L1TSumsProducer::_computeHT(const std::vector<reco::CaloJet>& l
   // range-based for loop that goes through all the trigger jets in the event
   for (const auto & jet: l1jetVector)
   {
-    lHT += (jet.pt() >= this -> _htPtThreshold) ? jet.pt() : 0;
+    double lJetPt = jet.pt();
+    double lJetPhi = jet.phi();
+    double lJetEta = jet.eta();
+    if 
+    (
+      (lJetPhi < this -> _phiLow) ||
+      (lJetPhi > this -> _phiUp)  ||
+      (lJetEta < this -> _etaLow)||
+      (lJetEta > this -> _etaUp)  
+    ) continue;
+    lHT += (lJetPt >= this -> _htPtThreshold) ? lJetPt : 0;
   }
 
   reco::Candidate::PolarLorentzVector lHTVector;
@@ -178,9 +197,16 @@ l1t::EtSum Phase1L1TSumsProducer::_computeMET(const ParticleCollection & particl
   for (const auto & particle : particleCollection)
   {
     double lParticlePhi = particle.phi();
+    double lParticleEta = particle.eta();
     double lParticlePt = particle.pt();
-    // skip particle if it does not fall in the histogram range
-    if ((lParticlePhi < this -> _phiLow) || (lParticlePhi > this -> _phiUp)) continue;
+    // skip particle if it does not fall in the range
+    if 
+    (
+      (lParticlePhi < this -> _phiLow) ||
+      (lParticlePhi > this -> _phiUp)  ||
+      (lParticleEta < this -> _etaLow)  ||
+      (lParticleEta > this -> _etaUp)  
+    ) continue;
     // computing bin index
     unsigned int iPhi = ( lParticlePhi - this -> _phiLow ) / this -> _phiStep;
     // retrieving sin cos from LUT emulator
@@ -194,11 +220,13 @@ l1t::EtSum Phase1L1TSumsProducer::_computeMET(const ParticleCollection & particl
   double lMET = sqrt(lTotalPx * lTotalPx + lTotalPy * lTotalPy);
   //packing in EtSum object
   reco::Candidate::PolarLorentzVector lMETVector;
-  lMETVector.SetPt(lMET);
-  lMETVector.SetEta(0);
-  lMETVector.SetPhi(0);
+  double lCosMETPhi = lTotalPx/lMET;
+  lMETVector.SetPxPyPzE(lTotalPx, lTotalPy, 0, lMET);
+  // lMETVector.SetEta(0);
+  // lMETVector.SetPhi(0);
   // kMissingEt is the enumerator for MET
   l1t::EtSum lMETSum(lMETVector, l1t::EtSum::EtSumType::kMissingEt);
+  // std::cout << lMETVector.pt() << " == " << lMET << "?" << std::endl;
 
   return lMETSum;
 
